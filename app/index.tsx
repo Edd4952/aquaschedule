@@ -1,20 +1,32 @@
-import { Pressable, Text, View } from 'react-native';
 import { Link, router } from 'expo-router';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 const HomePage = () => {
     return (
-        <View>
-            <Text>Home Page</Text>
-            <Link href={{ pathname: "/pages/mainpage", params: { id: "1" } }}>Go to Main Page</Link>
+        <View style={styles.container}>
+            <Text style={styles.text}>Home Page</Text>
+            <Link href={{ pathname: "/pages/mainpage", params: { id: "1" } }}>
+                <Text style={styles.text}>Go to Main Page</Text>
+            </Link>
             <Pressable onPress={() => router.push({ pathname: "/pages/about", params: { id: "2" } })}>
-                <Text>Go to About Page</Text>
+                <Text style={styles.text}>Go to About Page</Text>
             </Pressable>
-            {/* <Link href="/pages/3" asChild>
-                <Pressable>
-                    <Text>Go to User 3</Text>
-                </Pressable>
-            </Link> */}
         </View>
     );
 }
+
+const styles = StyleSheet.create({
+    container: {
+        flex: 1,
+        justifyContent: 'center',
+        alignItems: 'center',
+        backgroundColor: '#222', // Optional: dark background for contrast
+    },
+    text: {
+        color: 'white',
+        fontSize: 18,
+        margin: 8,
+    },
+});
+
 export default HomePage;
