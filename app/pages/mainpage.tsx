@@ -1,7 +1,6 @@
 import { StyleSheet, Text, View } from 'react-native';
 
 const userPage = () => {
-    
     return (
         <View style={styles.container}>
             <Text style={styles.title}>User Page</Text>

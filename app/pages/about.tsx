@@ -7,6 +7,7 @@ const About = () => {
     return (
         <View style={styles.container}>
             <Text style={styles.text}>About Page</Text>
+            <Text style={styles.text1}>This project was made in React Native + Expo</Text>
         </View>
     );
 };
@@ -20,8 +21,16 @@ const styles = StyleSheet.create({
     },
     text: {
         color: 'white',
+        fontSize: 28,
+        margin: 8,
+        fontWeight: 'bold',
+    },
+    text1: {
+        color: 'white',
         fontSize: 18,
         margin: 8,
+        fontWeight: 'bold',
+        maxWidth: '80%',
     },
 });
 

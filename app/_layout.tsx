@@ -15,9 +15,9 @@ const RootLayout = () => {
   return (
     <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
       <Stack>
-        <Stack.Screen name="index" options={{headerTitle: "Home"}} />
+        <Stack.Screen name="index" options={{headerTitle: "AquaSchedule"}} />
         <Stack.Screen name="pages/about" options={{headerTitle: "About"}} />
-        <Stack.Screen name="pages/mainpage" options={{headerTitle: "Main Page", headerShown: false}} />
+        <Stack.Screen name="pages/mainpage" options={{headerTitle: "Main Page", }} />
       </Stack>
     </ThemeProvider>
   );
