@@ -5,10 +5,10 @@ const HomePage = () => {
   return (
     <View style={styles.container}>
       <Text style={styles.text}>Velcome to mine app</Text>
-      <Link href={{ pathname: "/pages/mainpage", params: { id: "1" } }}>
+      <Link style={styles.button} href={{ pathname: "/pages/mainpage", params: { id: "1" } }}>
           <Text style={styles.text}>Make a schedule</Text>
       </Link>
-      <Pressable style={styles.button} onPress={() => router.push({ pathname: "/pages/about" })}>                
+      <Pressable onPress={() => router.push({ pathname: "/pages/about" })}>                
         <Text style={styles.text}>Go to About Page</Text>
       </Pressable>
     </View>
