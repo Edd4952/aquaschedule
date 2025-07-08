@@ -1,6 +1,7 @@
 import DateTimePicker from '@react-native-community/datetimepicker';
-import React, { useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Picker } from '@react-native-picker/picker';
+import React, { useMemo, useState } from 'react';
+import { Modal, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 
 type Employee = {
     id: number;
@@ -11,23 +12,53 @@ type Employee = {
 
 const employeeList: Employee[] = [
     { id: 0, name: 'Karol', numShifts: 0, daysCantWork: [] },
-    { id: 1, name: 'Edward', numShifts: 0, daysCantWork: [] },
-    { id: 2, name: 'Olivier', numShifts: 0, daysCantWork: [] },
-    { id: 3, name: 'Anna', numShifts: 0, daysCantWork: [] },
-    { id: 4, name: 'Alina', numShifts: 0, daysCantWork: [] },    
+        
 ];
 
 const userPage = () => {
-    
+    // INITIALIZATION AND DATA
     const [date, setDate] = useState(new Date());
     const [show, setShow] = useState(false);
     const [employees, setEmployees] = useState(employeeList);
-    const maxShifts = (28 / employeeList.length);
+    const maxShifts = useMemo(() => {
+        return employees.length > 0 ? Math.ceil(28 / employees.length) : 0;
+    }, [employees]);
+    const [editingNames, setEditingNames] = useState(employees.map(emp => emp.name));
+    const [editingDaysCantWork, setEditingDaysCantWork] = useState(employees.map(emp => emp.daysCantWork.join(',')));
+    //longpress
+    const [modalVisible, setModalVisible] = useState(false);
+    const [pickerVisible, setPickerVisible] = useState(false);
+    const [pickerEmployeeIdx, setPickerEmployeeIdx] = useState<number | null>(null);
+    const [selectedEmployeeIdx, setSelectedEmployeeIdx] = useState<number | null>(null);
+
+    const [selectedShiftInfo, setSelectedShiftInfo] = useState<{
+        employeeIdx: number;
+        week: 1 | 2;
+        dayIdx: number;
+        shiftType: 'AM' | 'PM';
+        date: Date;
+    } | null>(null);
+
+    const handleLongPress = (
+        employeeIdx: number,
+        week: 1 | 2,
+        dayIdx: number,
+        shiftType: 'AM' | 'PM',
+        shiftDate: Date
+    ) => {
+        setSelectedShiftInfo({ employeeIdx, week, dayIdx, shiftType, date: shiftDate });
+        setModalVisible(true);
+    };
     
     function resetShifts() {
         setEmployees(employees.map(emp => ({ ...emp, numShifts: 0 })));
     }
-
+    
+    function addEmployee() {
+        const newId = employees.length > 0 ? Math.max(...employees.map(e => e.id)) + 1 : 0;
+        setEmployees([...employees, { id: newId, name: `New`, numShifts: 0, daysCantWork: [] }]);
+        setEditingNames([...editingNames, "New"]);
+    }
     function findNewEmplFromList(int: number, list = employees, day: number): number {
         // create new array without the employee with the given id
         const filtered = list.filter(employeeList => employeeList.id !== int);
@@ -38,58 +69,70 @@ const userPage = () => {
         return filterCantWork.length > 0 ? filterCantWork[Math.floor(Math.random() * filterCantWork.length)].id : -1;
     }
     
-    const week1 = Array.from({ length: 7 }, (_, i) => {
-        let localEmployees = [...employees]; // Make a copy for counting
-        let AMshift = findNewEmplFromList(-1, localEmployees, i + 1);
-        if (AMshift !== -1) {
-            localEmployees[AMshift] = { ...localEmployees[AMshift], numShifts: localEmployees[AMshift].numShifts + 1 };
-        }
-        let PMshift = findNewEmplFromList(AMshift, localEmployees, i + 1);
-        if (PMshift !== -1) {
-            localEmployees[PMshift] = { ...localEmployees[PMshift], numShifts: localEmployees[PMshift].numShifts + 1 };
-        }
+    const week1 = useMemo(() => {
+        let localEmployees = employees.map(emp => ({ ...emp })); // Make a copy for counting
+        return Array.from({ length: 7 }, (_, i) => {
 
-        const day = i + 1;
-        const dayDate = new Date(date.getFullYear(), date.getMonth(), date.getDate() + i).toLocaleDateString();
-        const shortDate = String(new Date(date.getFullYear(), date.getMonth(), date.getDate() + i).getMonth() + 1) + '/' + String(new Date(date.getFullYear(), date.getMonth(), date.getDate() + i).getDate());
-        
-        if (AMshift !== -1) {
-            employees[AMshift].numShifts++;
-        }
-        if (PMshift !== -1) {
-            employees[PMshift].numShifts++;
-        }
-        return {
-            day,
-            dayDate,
-            shortDate,
-            AMshift: [AMshift],
-            PMshift: [PMshift],
-        };
-    });
-    const week2 = Array.from({ length: 7 }, (_, i) => {
-        //shifts are a random number that represents the index of the employee in the employees
-        let AMshift = findNewEmplFromList(-1, employees, i + 7);
-        let PMshift = findNewEmplFromList(AMshift, employees, i + 7);
+            let AMshift = findNewEmplFromList(-1, localEmployees, i + 1);
+            if (AMshift !== -1) {
+                localEmployees[AMshift] = { ...localEmployees[AMshift], numShifts: localEmployees[AMshift].numShifts + 1 };
+            }
+            let PMshift = findNewEmplFromList(AMshift, localEmployees, i + 1);
+            if (PMshift !== -1) {
+                localEmployees[PMshift] = { ...localEmployees[PMshift], numShifts: localEmployees[PMshift].numShifts + 1 };
+            }
 
-        const day = i + 1;
-        const dayDate = new Date(date.getFullYear(), date.getMonth(), date.getDate() + i + 7).toLocaleDateString();
-        const shortDate = String(new Date(date.getFullYear(), date.getMonth(), date.getDate() + i + 7).getMonth() + 1) + '/' + String(new Date(date.getFullYear(), date.getMonth(), date.getDate() + i + 7).getDate());
+            const day = i + 1;
+            const dayDate = new Date(date.getFullYear(), date.getMonth(), date.getDate() + i).toLocaleDateString();
+            const shortDate = String(new Date(date.getFullYear(), date.getMonth(), date.getDate() + i).getMonth() + 1) + '/' + String(new Date(date.getFullYear(), date.getMonth(), date.getDate() + i).getDate());
+            
+            if (AMshift !== -1) {
+                employees[AMshift].numShifts++;
+            }
+            if (PMshift !== -1) {
+                employees[PMshift].numShifts++;
+            }
+            return {
+                day,
+                dayDate,
+                shortDate,
+                AMshift: [AMshift],
+                PMshift: [PMshift],
+            };
+        });
+    }, [employees, date, ]);
 
-        if (AMshift !== -1) {
-            employees[AMshift].numShifts++;
-        }
-        if (PMshift !== -1) {
-            employees[PMshift].numShifts++;
-        }
-        return {
-            day,
-            dayDate,
-            shortDate,
-            AMshift: [AMshift],
-            PMshift: [PMshift],
-        };
-    });
+    const week2 = useMemo(() => {
+        return Array.from({ length: 7 }, (_, i) => {
+            let localEmployees = [...employees]; // Make a copy for counting
+            let AMshift = findNewEmplFromList(-1, localEmployees, i + 1 + 7);
+            if (AMshift !== -1) {
+                localEmployees[AMshift] = { ...localEmployees[AMshift], numShifts: localEmployees[AMshift].numShifts + 1 };
+            }
+            let PMshift = findNewEmplFromList(AMshift, localEmployees, i + 1 + 7);
+            if (PMshift !== -1) {
+                localEmployees[PMshift] = { ...localEmployees[PMshift], numShifts: localEmployees[PMshift].numShifts + 1 };
+            }
+
+            const day = i + 1;
+            const dayDate = new Date(date.getFullYear(), date.getMonth(), date.getDate() + i + 7).toLocaleDateString();
+            const shortDate = String(new Date(date.getFullYear(), date.getMonth(), date.getDate() + i + 7).getMonth() + 1) + '/' + String(new Date(date.getFullYear(), date.getMonth(), date.getDate() + i + 7).getDate());
+
+            if (AMshift !== -1) {
+                employees[AMshift].numShifts++;
+            }
+            if (PMshift !== -1) {
+                employees[PMshift].numShifts++;
+            }
+            return {
+                day,
+                dayDate,
+                shortDate,
+                AMshift: [AMshift],
+                PMshift: [PMshift],
+            };
+        });
+    }, [employees, date]);
     
 
     const onChange = (event: any, selectedDate?: Date | undefined) => {
@@ -108,25 +151,223 @@ const userPage = () => {
                 <Pressable style={styles.button} onPress={() => setShow(true)}>
                     <Text style={styles.buttonText}>Select First Day of the Schedule</Text>
                 </Pressable>
-                <Text style={{ color: 'white', margin: 8 }}>
+                <Text style={{ color: 'white', fontSize: 18 }}>
                     Selected date: {date.toLocaleDateString()}
-                    maxshifts: {maxShifts}
-                    {"\n"}
-                    karol: {employees[0].numShifts}
-                    {"\n"}
-                    edward: {employees[1].numShifts}
-                    {"\n"}
-                    olivier: {employees[2].numShifts}
-                    {"\n"}
-                    anna: {employees[3].numShifts}
-                    {"\n"}
-                    alina: {employees[4].numShifts}
                 </Text>
-                <Pressable style={styles.button} onPress={() => resetShifts()}>
-                    <Text style={styles.buttonText}>Reset Shifts</Text>
+                {/* Edit add and remove employee Names */}
+                <View style={{ gap: 4 }}>
+                    <Text style={{ color: 'white', fontWeight: 'bold', fontSize: 20 }}>Edit Employees:</Text>
+                    <Pressable style={styles.button} onPress={addEmployee}>
+                        <Text style={styles.buttonText}>+Add Employee</Text>
+                    </Pressable>
+                    {employees.map((emp, idx) => (
+                        <View key={`employee-edit-${emp.id}`}>
+                            <View key={emp.id} style={{ flexDirection: 'row', alignItems: 'center', marginVertical: 4, justifyContent: 'space-around', gap: 8, paddingRight: 8 }}>
+                                <Text style={{ color: 'white', fontSize: 18}}>{emp.id +1}</Text>
+                                <TextInput
+                                    style={{
+                                        backgroundColor: '#444',
+                                        color: 'white',
+                                        fontSize: 18,
+                                        fontWeight: 'bold',
+                                        borderRadius: 4,
+                                        padding: 4,
+                                        width: 80,
+                                    }}
+                                    value={editingNames[idx]}
+                                    onChangeText={text => {
+                                        const updated = [...editingNames];
+                                        updated[idx] = text;
+                                        setEditingNames(updated);
+                                        setEmployees(emps => emps.map((e, i) => i === idx ? { ...e, name: text } : e));
+                                    }}
+                                    onEndEditing={() => {
+                                        // Update the employees state with the new name
+                                        setEmployees(emps =>
+                                            emps.map((e, i) => i === idx ? { ...e, name: editingNames[idx] } : e)
+                                        );
+                                        
+                                    }}
+                                />
+                                <Pressable
+                                    style={{ backgroundColor: '#c00', borderRadius: 4, padding: 4 }}
+                                    onPress={() => {
+                                        setEmployees(emps => emps.filter((_, i) => i !== idx));
+                                        setEditingNames(names => names.filter((_, i) => i !== idx));
+                                        setEmployees(emps => emps.map((e, i) => ({ ...e, id: i })));
+                                    }}
+                                >
+                                    <Text style={{ color: 'white', fontSize: 14, fontWeight: 'bold' }}>Remove</Text>
+                                </Pressable>
+                                <>{/* Add day off button */}</>
+                                <Pressable
+                                    style={{ backgroundColor: '#0af', borderRadius: 4, padding: 4 }}
+                                    onPress={() => {
+                                        setPickerEmployeeIdx(idx);
+                                        setPickerVisible(true);
+                                    }}
+                                >
+                                    <Text style={{ color: 'white', fontWeight: 'bold' }}>+ Day off</Text>
+                                </Pressable>
+                                <Pressable
+                                    style={{ backgroundColor: '#fa0', borderRadius: 4, padding: 4 }}
+                                    onPress={() => {
+                                        // Remove the last day off for this employee, if any
+                                        setEmployees(emps =>
+                                            emps.map((e, i) =>
+                                                i === idx && e.daysCantWork.length > 0
+                                                    ? { ...e, daysCantWork: e.daysCantWork.slice(0, -1) }
+                                                    : e
+                                            )
+                                        );
+                                        setEditingDaysCantWork(days =>
+                                            days.map((d, i) =>
+                                                i === idx
+                                                    ? d
+                                                        .split(',')
+                                                        .filter((_, j, arr) => j < arr.length - 1)
+                                                        .join(',')
+                                                    : d
+                                            )
+                                        );
+                                    }}
+                                >
+                                    <Text style={{ color: 'white', fontWeight: 'bold' }}>- Day off</Text>
+                                </Pressable>
+                            </View>
+                            <View key={`employee-days-off-${emp.id}`}>
+                                <Text style={{ color: 'white', fontSize: 14, fontWeight: 'bold' }}>
+                                    Shifts: {emp.numShifts}{"  "}
+                                    
+                                    Days off: {employees[idx].daysCantWork
+                                        .map(dayNum => {
+                                            // Calculate the date for this day off
+                                            const dayDate = new Date(date.getFullYear(), date.getMonth(), date.getDate() + (dayNum - 1));
+                                            return `${dayDate.getMonth() + 1}/${dayDate.getDate()}`;
+                                        })
+                                        .join(', ')
+                                    }
+                                </Text>
+                            </View>
+                        </View>            
+                        ))}
+                </View>
+                <Pressable style={styles.button} onPress={() => {resetShifts();}}>
+                    <Text style={styles.buttonText}>Shuffle Shifts</Text>
                 </Pressable>
+                
+                {pickerVisible && (
+                    <DateTimePicker
+                        value={date}
+                        mode="date"
+                        display="default"
+                        onChange={(event, selectedDate) => {
+                            setPickerVisible(false);
+                            let dayIdx: number | undefined = undefined;
+                            if (selectedDate && pickerEmployeeIdx !== null) {
+                                let diffTime = Math.abs(selectedDate.getTime() - date.getTime()); // difference in milliseconds
+                                let diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1; // difference in days
+                                if (selectedDate.getDate() == date.getDate()) {
+                                    diffDays = 1; // if the selected date is before the current date,
+                                }
+                                dayIdx = diffDays;
+                                setEmployees(emps =>
+                                    emps.map((e, i) =>
+                                        i === pickerEmployeeIdx && !e.daysCantWork.includes(dayIdx!)
+                                            ? { ...e, daysCantWork: [...e.daysCantWork, dayIdx!] }
+                                            : e
+                                    )
+                                );
+                                setEditingDaysCantWork(days =>
+                                    days.map((d, i) =>
+                                        i === pickerEmployeeIdx && dayIdx !== undefined
+                                            ? [...new Set([...d.split(',').filter(x => x !== '').map(Number), selectedDate.getDate().toLocaleString])].join(',')
+                                            : d
+                                    )
+                                );
+                            }
+                            setPickerEmployeeIdx(null);
+                        }}
+                    />
+                )}
 
+                {modalVisible && selectedShiftInfo && selectedShiftInfo.employeeIdx !== -1 &&(
+                    <Modal
+                        visible={modalVisible}
+                        transparent
+                        animationType="fade"
+                        onRequestClose={() => setModalVisible(false)}
+                    >
+                        <View style={{
+                            flex: 1,
+                            backgroundColor: 'rgba(0,0,0,0.5)',
+                            justifyContent: 'center',
+                            alignItems: 'center'
+                        }}>
+                            <View style={{
+                                backgroundColor: '#333',
+                                padding: 18,
+                                borderRadius: 12,
+                                alignItems: 'center'
+                            }}>
+                                <Text style={{color: 'white', fontSize: 20, marginBottom: 16, fontWeight: 'bold'}}>Shift Options</Text>
+                                <Text style={{color: 'white', fontSize: 18, marginBottom: 8}}>
+                                    {`Employee: ${employees[selectedShiftInfo.employeeIdx].name}\n`}
+                                    {`Date: ${selectedShiftInfo.date.toLocaleDateString()}`}
+                                </Text>
+                                
+                                <Picker
+                                    selectedValue={selectedEmployeeIdx}
+                                    style={{ height: 50, width: 200, color: 'white', backgroundColor: '#444' }}
+                                    onValueChange={(itemValue, itemIndex) => setSelectedEmployeeIdx(itemValue)}
+                                >
+                                    {employees.map(emp => (
+                                        <Picker.Item key={emp.id} label={emp.name} value={emp.id} />
+                                    ))}
+                                </Picker>
 
+                                <Pressable onPress={() => {
+                                        if (
+                                            selectedEmployeeIdx !== null
+                                        ) {
+                                            
+                                            week1.forEach((day, idx) => {
+                                                if (day.dayDate === selectedShiftInfo.date?.toLocaleDateString()) {
+                                                    if (day.AMshift[0] === selectedShiftInfo.employeeIdx) {
+                                                        day.AMshift[0] = selectedEmployeeIdx;
+                                                    }
+                                                    if (day.PMshift[0] === selectedShiftInfo.employeeIdx) {
+                                                        day.PMshift[0] = selectedEmployeeIdx;
+                                                    }
+
+                                                }
+                                            });
+
+                                            week2.forEach((day, idx) => {
+                                                if (day.dayDate === selectedShiftInfo.date?.toLocaleDateString()) {
+                                                    if (day.AMshift[0] === selectedShiftInfo.employeeIdx) {
+                                                        day.AMshift[0] = selectedEmployeeIdx;
+                                                    }
+                                                    if (day.PMshift[0] === selectedShiftInfo.employeeIdx) {
+                                                        day.PMshift[0] = selectedEmployeeIdx;
+                                                    }
+                                                }
+                                            });
+                                        }
+                                        
+                                        // Update the employee's shifts
+                                        setModalVisible(false);
+                                    }}>
+                                    <Text style={{color: '#00f', fontSize: 18, marginBottom: 8}}>Swap Employee</Text>
+                                </Pressable>
+
+                                <Pressable onPress={() => setModalVisible(false)}>
+                                    <Text style={{color: '#fff', fontSize: 18}}>Cancel</Text>
+                                </Pressable>
+                            </View>
+                        </View>
+                    </Modal>
+                )}
                 {show && (
                     <DateTimePicker
                         value={date}
@@ -162,18 +403,22 @@ const userPage = () => {
                                     <Text style={{color: 'white', fontSize: 18, fontWeight: 'bold', }}>
                                         AM:
                                     </Text>
-                                    <Text style={{color: 'white', fontSize: 18, fontWeight: 'bold', }}>
-                                        {item.AMshift[0] !== -1 ? employees[item.AMshift[0]].name : 'No one'}
-                                    </Text>
+                                    <Pressable onLongPress={() => handleLongPress(item.AMshift[0], 1, idx, 'AM', new Date(date.getFullYear(), date.getMonth(), date.getDate() + idx))}>
+                                        <Text style={{color: 'white', fontSize: 18, fontWeight: 'bold', backgroundColor: '#444', borderRadius: 4}}>
+                                            {" "}{item.AMshift[0] !== -1 ? employees[item.AMshift[0]].name : 'No one'}{" "}
+                                        </Text>
+                                    </Pressable>
                                 </View>
                                 
                                 <View style={styles.cell}>
                                     <Text style={{color: 'white', fontSize: 18, fontWeight: 'bold'}}>
                                         PM:
                                     </Text>
-                                    <Text style={{color: 'white', fontSize: 18, fontWeight: 'bold'}}>
-                                        {item.PMshift[0] !== -1 ? employees[item.PMshift[0]].name : 'No one'}
-                                    </Text>
+                                    <Pressable onLongPress={() => handleLongPress(item.PMshift[0], 1, idx, 'PM', new Date(date.getFullYear(), date.getMonth(), date.getDate() + idx))}>
+                                        <Text style={{color: 'white', fontSize: 18, fontWeight: 'bold', backgroundColor: '#222', borderRadius: 4}}>
+                                            {" "}{item.PMshift[0] !== -1 ? employees[item.PMshift[0]].name : 'No one'}{" "}
+                                        </Text>
+                                    </Pressable>
                                 </View>
                             </View>
                         </View>
@@ -196,18 +441,22 @@ const userPage = () => {
                                     <Text style={{color: 'white', fontSize: 18, fontWeight: 'bold', }}>
                                         AM:
                                     </Text>
-                                    <Text style={{color: 'white', fontSize: 18, fontWeight: 'bold', }}>
-                                        {item.AMshift[0] !== -1 ? employees[item.AMshift[0]].name : 'No one'}
-                                    </Text>
+                                    <Pressable onLongPress={() => handleLongPress(item.AMshift[0], 2, idx, 'AM', new Date(date.getFullYear(), date.getMonth(), date.getDate() + idx + 7))}>
+                                        <Text style={{color: 'white', fontSize: 18, fontWeight: 'bold', backgroundColor: '#444', borderRadius: 4}}>
+                                            {" "}{item.AMshift[0] !== -1 ? employees[item.AMshift[0]].name : 'No one'}{" "}
+                                        </Text>
+                                    </Pressable>
                                 </View>
                                 
                                 <View style={styles.cell}>
                                     <Text style={{color: 'white', fontSize: 18, fontWeight: 'bold'}}>
                                         PM:
                                     </Text>
-                                    <Text style={{color: 'white', fontSize: 18, fontWeight: 'bold'}}>
-                                        {item.PMshift[0] !== -1 ? employees[item.PMshift[0]].name : 'No one'}
-                                    </Text>
+                                    <Pressable onLongPress={() => handleLongPress(item.PMshift[0], 2, idx, 'PM', new Date(date.getFullYear(), date.getMonth(), date.getDate() + idx + 7))}>
+                                        <Text style={{color: 'white', fontSize: 18, fontWeight: 'bold', backgroundColor: '#222', borderRadius: 4}}>
+                                            {" "}{item.PMshift[0] !== -1 ? employees[item.PMshift[0]].name : 'No one'}{" "}
+                                        </Text>
+                                    </Pressable>
                                 </View>
                             </View>
                         </View>
@@ -225,14 +474,17 @@ const styles = StyleSheet.create({
         justifyContent: 'flex-start',
         backgroundColor: '#222', // Changed to dark background
         alignItems: 'center',
+        gap: 8,
     },
     optionsContainer:{
         display: 'flex',
         flexDirection: 'column',
         justifyContent: 'space-between',
+        backgroundColor: '#333',
+        borderRadius: 8,
+        padding: 8,
+        marginTop: 8,
         width: '90%',
-        borderWidth: 1,
-        borderColor: 'red',
         gap: 8,
     },
     scheduleContainer: {
@@ -241,8 +493,6 @@ const styles = StyleSheet.create({
         flexWrap: 'wrap',
         justifyContent: 'space-between',
         width: '90%',
-        borderWidth: 1,
-        borderColor: 'green', 
 
     },
     weekContainer: {
@@ -270,9 +520,8 @@ const styles = StyleSheet.create({
     cell: {
         display: 'flex',
         flexDirection: 'row',
-        borderWidth: 1,
-        borderColor: 'purple',
         justifyContent: 'space-between',
+        
     },
     title: {
         fontSize: 28,
@@ -287,7 +536,8 @@ const styles = StyleSheet.create({
     button: {
         backgroundColor: '#008AFF',
         paddingVertical: 3,
-        marginHorizontal: 8,
+        marginHorizontal: 0,
+        marginVertical: 4,
         borderRadius: 8,
     },
     buttonText: {
