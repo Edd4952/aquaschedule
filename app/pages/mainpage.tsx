@@ -2,6 +2,7 @@ import DateTimePicker from '@react-native-community/datetimepicker';
 import { Picker } from '@react-native-picker/picker';
 import React, { useMemo, useState } from 'react';
 import { Modal, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 type Employee = {
     id: number;
@@ -30,7 +31,37 @@ const userPage = () => {
     const [pickerVisible, setPickerVisible] = useState(false);
     const [pickerEmployeeIdx, setPickerEmployeeIdx] = useState<number | null>(null);
     const [selectedEmployeeIdx, setSelectedEmployeeIdx] = useState<number | null>(null);
-
+    //const [week1, setWeek1] = useState<any[]>([]);
+    //const [week2, setWeek2] = useState<any[]>([]);
+    
+    const saveSchedule = async (scheduleData: any) => {
+        try {
+            await AsyncStorage.setItem('savedSchedule', JSON.stringify(scheduleData));
+            alert('Schedule saved!');
+        } catch (e) {
+            alert('Failed to save schedule.');
+        }
+    };
+    {/* */}
+    const loadSchedule = async () => {
+        try {
+            const value = await AsyncStorage.getItem('savedSchedule');
+            if (value !== null) {
+                const loadedSchedule = JSON.parse(value);
+                
+                setEmployees(loadedSchedule.employees);
+                setEditingNames(loadedSchedule.employees.map((emp: Employee) => emp.name));
+                setEditingDaysCantWork(loadedSchedule.employees.map((emp: Employee) => emp.daysCantWork.join(',')));
+                week1.forEach((day, idx) => {
+                    
+                });
+                //setWeek2(loadedSchedule.week2);
+            }
+        } catch (e) {
+            alert('Failed to load schedule.');
+        }
+    };
+    
     const [selectedShiftInfo, setSelectedShiftInfo] = useState<{
         employeeIdx: number;
         week: 1 | 2;
@@ -69,7 +100,7 @@ const userPage = () => {
         return filterCantWork.length > 0 ? filterCantWork[Math.floor(Math.random() * filterCantWork.length)].id : -1;
     }
     
-    const week1 = useMemo(() => {
+    const week1 = (useMemo(() => {
         let localEmployees = employees.map(emp => ({ ...emp })); // Make a copy for counting
         return Array.from({ length: 7 }, (_, i) => {
 
@@ -100,9 +131,9 @@ const userPage = () => {
                 PMshift: [PMshift],
             };
         });
-    }, [employees, date, ]);
+    }, [employees, date, ]));
 
-    const week2 = useMemo(() => {
+    const week2 = (useMemo(() => {
         return Array.from({ length: 7 }, (_, i) => {
             let localEmployees = [...employees]; // Make a copy for counting
             let AMshift = findNewEmplFromList(-1, localEmployees, i + 1 + 7);
@@ -132,7 +163,7 @@ const userPage = () => {
                 PMshift: [PMshift],
             };
         });
-    }, [employees, date]);
+    }, [employees, date]));
     
 
     const onChange = (event: any, selectedDate?: Date | undefined) => {
@@ -155,6 +186,7 @@ const userPage = () => {
                     Selected date: {date.toLocaleDateString()}
                 </Text>
                 {/* Edit add and remove employee Names */}
+                <View style={styles.separator} />
                 <View style={{ gap: 4 }}>
                     <Text style={{ color: 'white', fontWeight: 'bold', fontSize: 20 }}>Edit Employees:</Text>
                     <Pressable style={styles.button} onPress={addEmployee}>
@@ -162,8 +194,8 @@ const userPage = () => {
                     </Pressable>
                     {employees.map((emp, idx) => (
                         <View key={`employee-edit-${emp.id}`}>
-                            <View key={emp.id} style={{ flexDirection: 'row', alignItems: 'center', marginVertical: 4, justifyContent: 'space-around', gap: 8, paddingRight: 8 }}>
-                                <Text style={{ color: 'white', fontSize: 18}}>{emp.id +1}</Text>
+                            <View key={emp.id} style={{ flexDirection: 'row', alignItems: 'center', marginVertical: 4, justifyContent: 'space-around', gap: 4 }}>
+                                <Text style={{ color: 'white', fontSize: 18 }}>{emp.id + 1}</Text>
                                 <TextInput
                                     style={{
                                         backgroundColor: '#444',
@@ -252,6 +284,8 @@ const userPage = () => {
                         </View>            
                         ))}
                 </View>
+                <View style={styles.separator} />
+                {/* Shuffle shifts */}
                 <Pressable style={styles.button} onPress={() => {resetShifts();}}>
                     <Text style={styles.buttonText}>Shuffle Shifts</Text>
                 </Pressable>
@@ -311,9 +345,10 @@ const userPage = () => {
                                 alignItems: 'center'
                             }}>
                                 <Text style={{color: 'white', fontSize: 20, marginBottom: 16, fontWeight: 'bold'}}>Shift Options</Text>
-                                <Text style={{color: 'white', fontSize: 18, marginBottom: 8}}>
+                                <Text style={{color: 'white', fontSize: 18, marginBottom: 8, lineHeight: 24}}>
                                     {`Employee: ${employees[selectedShiftInfo.employeeIdx].name}\n`}
-                                    {`Date: ${selectedShiftInfo.date.toLocaleDateString()}`}
+                                    {`Date: ${selectedShiftInfo.date.toLocaleDateString()}\n`}
+                                    {`${selectedShiftInfo.shiftType} shift `}
                                 </Text>
                                 
                                 <Picker
@@ -321,6 +356,7 @@ const userPage = () => {
                                     style={{ height: 50, width: 200, color: 'white', backgroundColor: '#444' }}
                                     onValueChange={(itemValue, itemIndex) => setSelectedEmployeeIdx(itemValue)}
                                 >
+                                    {`Select Employee`}
                                     {employees.map(emp => (
                                         <Picker.Item key={emp.id} label={emp.name} value={emp.id} />
                                     ))}
@@ -335,11 +371,12 @@ const userPage = () => {
                                                 if (day.dayDate === selectedShiftInfo.date?.toLocaleDateString()) {
                                                     if (day.AMshift[0] === selectedShiftInfo.employeeIdx) {
                                                         day.AMshift[0] = selectedEmployeeIdx;
+                                                        employees[selectedEmployeeIdx].numShifts++;
                                                     }
                                                     if (day.PMshift[0] === selectedShiftInfo.employeeIdx) {
                                                         day.PMshift[0] = selectedEmployeeIdx;
+                                                        employees[selectedEmployeeIdx].numShifts++;
                                                     }
-
                                                 }
                                             });
 
@@ -347,15 +384,15 @@ const userPage = () => {
                                                 if (day.dayDate === selectedShiftInfo.date?.toLocaleDateString()) {
                                                     if (day.AMshift[0] === selectedShiftInfo.employeeIdx) {
                                                         day.AMshift[0] = selectedEmployeeIdx;
+                                                        employees[selectedEmployeeIdx].numShifts++;
                                                     }
                                                     if (day.PMshift[0] === selectedShiftInfo.employeeIdx) {
                                                         day.PMshift[0] = selectedEmployeeIdx;
+                                                        employees[selectedEmployeeIdx].numShifts++;
                                                     }
                                                 }
                                             });
                                         }
-                                        
-                                        // Update the employee's shifts
                                         setModalVisible(false);
                                     }}>
                                     <Text style={{color: '#00f', fontSize: 18, marginBottom: 8}}>Swap Employee</Text>
@@ -409,7 +446,7 @@ const userPage = () => {
                                         </Text>
                                     </Pressable>
                                 </View>
-                                
+                                <View style={styles.separator} />
                                 <View style={styles.cell}>
                                     <Text style={{color: 'white', fontSize: 18, fontWeight: 'bold'}}>
                                         PM:
@@ -447,7 +484,7 @@ const userPage = () => {
                                         </Text>
                                     </Pressable>
                                 </View>
-                                
+                                <View style={styles.separator} />
                                 <View style={styles.cell}>
                                     <Text style={{color: 'white', fontSize: 18, fontWeight: 'bold'}}>
                                         PM:
@@ -462,6 +499,36 @@ const userPage = () => {
                         </View>
                     ))}
                 </View>
+            </View>
+            
+            <View style={styles.separator} />
+            {/* Save and Load Schedule buttons 
+            <Pressable style={styles.button} onPress={() => saveSchedule({ employees, week1, week2 })}>
+                <Text style={styles.buttonText}>Save Schedule</Text>
+            </Pressable>
+            <Pressable style={styles.button} onPress={loadSchedule}>
+                <Text style={styles.buttonText}>Load Schedule</Text>
+            </Pressable>
+            */}
+            <View style={{ width: '90%', padding: 8, backgroundColor: '#444', borderRadius: 8, gap: 8 }}>
+                <Text style={styles.title}>Info:</Text>
+                <Text style={{ color: 'white', fontSize: 18, textAlign: 'left' }}>
+                    This is a schedule management app for the managers of Aquaguard.
+                </Text>
+                <View style= {styles.separator} />
+                <Text style={{ color: 'white', fontSize: 18, textAlign: 'left' }}>
+                    Start by selecting the first day of the schedule.
+                    Then add employees, edit their names, and set the days they are unable to work.
+                    Then press Shuffle Shifts. 
+                    To manually adjust shifts, long press on the name of an employee, then select the employee you want to swap them with.
+                </Text>
+                <View style= {styles.separator} />
+                <Text style={{ color: 'white', fontSize: 18, textAlign: 'left' }}>
+                    Rules in place when shuffled:
+                    {"\n"}- Employees are given a roughly equal number of shifts
+                    {"\n"}- Employees are never selected twice in the same day
+                    {"\n"}- Employees are never selected on days they cannot work
+                </Text>
             </View>
         </ScrollView>
     );
@@ -483,7 +550,7 @@ const styles = StyleSheet.create({
         backgroundColor: '#333',
         borderRadius: 8,
         padding: 8,
-        marginTop: 8,
+        marginTop: 16,
         width: '90%',
         gap: 8,
     },
@@ -547,6 +614,11 @@ const styles = StyleSheet.create({
         fontWeight: 'bold',
         padding: 8,
     },
+    separator: {
+    height: 1,
+    backgroundColor: '#666',
+    marginVertical: 1,
+  }
 });
 
 export default userPage;

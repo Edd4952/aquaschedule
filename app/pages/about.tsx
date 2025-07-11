@@ -7,7 +7,12 @@ const About = () => {
     return (
         <View style={styles.container}>
             <Text style={styles.text}>About Page</Text>
-            <Text style={styles.text1}>This project was made in React Native + Expo</Text>
+            <Text style={styles.text1}>
+                Hi, I'm Edward.{'\n'}
+                I created this software for my part time job at Aquaguard.
+                This project was made in React Native + Expo.
+
+            </Text>
         </View>
     );
 };
@@ -31,6 +36,7 @@ const styles = StyleSheet.create({
         margin: 8,
         fontWeight: 'bold',
         maxWidth: '80%',
+        lineHeight: 25,
     },
 });
 

@@ -4,12 +4,12 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 const HomePage = () => {
   return (
     <View style={styles.container}>
-      <Text style={styles.text}>Velcome to mine app</Text>
+      <Text style={styles.text}>Welcome to my app</Text>
       <Link style={styles.button} href={{ pathname: "/pages/mainpage", params: { id: "1" } }}>
           <Text style={styles.text}>Make a schedule</Text>
       </Link>
-      <Pressable onPress={() => router.push({ pathname: "/pages/about" })}>                
-        <Text style={styles.text}>Go to About Page</Text>
+      <Pressable style={styles.button2} onPress={() => router.push({ pathname: "/pages/about" })}>
+        <Text style={styles.text}>About Page</Text>
       </Pressable>
     </View>
   );
@@ -34,6 +34,13 @@ const styles = StyleSheet.create({
   },
   button: {
     backgroundColor: '#007AFF',
+    paddingVertical: 4,
+    paddingHorizontal: 8,
+    borderRadius: 8,
+  }
+  ,
+  button2: {
+    backgroundColor: 'grey',
     paddingVertical: 4,
     paddingHorizontal: 8,
     borderRadius: 8,
