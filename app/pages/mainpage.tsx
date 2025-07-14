@@ -1,8 +1,8 @@
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { Picker } from '@react-native-picker/picker';
 import React, { useMemo, useState } from 'react';
 import { Modal, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 
 type Employee = {
     id: number;
@@ -12,11 +12,10 @@ type Employee = {
 };
 
 const employeeList: Employee[] = [
-    { id: 0, name: 'Karol', numShifts: 0, daysCantWork: [] },
-        
+    { id: 0, name: 'Karol', numShifts: 0, daysCantWork: [] }
 ];
 
-const userPage = () => {
+const mainpage = () => {
     // INITIALIZATION AND DATA
     const [date, setDate] = useState(new Date());
     const [show, setShow] = useState(false);
@@ -36,31 +35,17 @@ const userPage = () => {
     
     const saveSchedule = async (scheduleData: any) => {
         try {
-            await AsyncStorage.setItem('savedSchedule', JSON.stringify(scheduleData));
+            const raw = await AsyncStorage.getItem('savedSchedules');
+            const schedules = raw ? JSON.parse(raw) : [];
+            const newSchedule = { ...scheduleData, savedAt: new Date().toISOString() };
+            await AsyncStorage.setItem('savedSchedules', JSON.stringify([...schedules, newSchedule]));
             alert('Schedule saved!');
         } catch (e) {
             alert('Failed to save schedule.');
         }
     };
     {/* */}
-    const loadSchedule = async () => {
-        try {
-            const value = await AsyncStorage.getItem('savedSchedule');
-            if (value !== null) {
-                const loadedSchedule = JSON.parse(value);
-                
-                setEmployees(loadedSchedule.employees);
-                setEditingNames(loadedSchedule.employees.map((emp: Employee) => emp.name));
-                setEditingDaysCantWork(loadedSchedule.employees.map((emp: Employee) => emp.daysCantWork.join(',')));
-                week1.forEach((day, idx) => {
-                    
-                });
-                //setWeek2(loadedSchedule.week2);
-            }
-        } catch (e) {
-            alert('Failed to load schedule.');
-        }
-    };
+    
     
     const [selectedShiftInfo, setSelectedShiftInfo] = useState<{
         employeeIdx: number;
@@ -178,6 +163,7 @@ const userPage = () => {
         <ScrollView contentContainerStyle={styles.container}>
             {/* options */}
             <View style={styles.optionsContainer}>
+                
                 <Text style={styles.title}>Options</Text>
                 <Pressable style={styles.button} onPress={() => setShow(true)}>
                     <Text style={styles.buttonText}>Select First Day of the Schedule</Text>
@@ -185,13 +171,13 @@ const userPage = () => {
                 <Text style={{ color: 'white', fontSize: 18 }}>
                     Selected date: {date.toLocaleDateString()}
                 </Text>
+                
                 {/* Edit add and remove employee Names */}
                 <View style={styles.separator} />
+
                 <View style={{ gap: 4 }}>
                     <Text style={{ color: 'white', fontWeight: 'bold', fontSize: 20 }}>Edit Employees:</Text>
-                    <Pressable style={styles.button} onPress={addEmployee}>
-                        <Text style={styles.buttonText}>+Add Employee</Text>
-                    </Pressable>
+                    
                     {employees.map((emp, idx) => (
                         <View key={`employee-edit-${emp.id}`}>
                             <View key={emp.id} style={{ flexDirection: 'row', alignItems: 'center', marginVertical: 4, justifyContent: 'space-around', gap: 4 }}>
@@ -218,7 +204,6 @@ const userPage = () => {
                                         setEmployees(emps =>
                                             emps.map((e, i) => i === idx ? { ...e, name: editingNames[idx] } : e)
                                         );
-                                        
                                     }}
                                 />
                                 <Pressable
@@ -269,8 +254,7 @@ const userPage = () => {
                             </View>
                             <View key={`employee-days-off-${emp.id}`}>
                                 <Text style={{ color: 'white', fontSize: 14, fontWeight: 'bold' }}>
-                                    Shifts: {emp.numShifts}{"  "}
-                                    
+                                    {emp.numShifts}{" shifts, "}
                                     Days off: {employees[idx].daysCantWork
                                         .map(dayNum => {
                                             // Calculate the date for this day off
@@ -283,13 +267,11 @@ const userPage = () => {
                             </View>
                         </View>            
                         ))}
+                    <Pressable style={styles.button} onPress={addEmployee}>
+                        <Text style={styles.buttonText}>+Add Employee</Text>
+                    </Pressable>
                 </View>
-                <View style={styles.separator} />
-                {/* Shuffle shifts */}
-                <Pressable style={styles.button} onPress={() => {resetShifts();}}>
-                    <Text style={styles.buttonText}>Shuffle Shifts</Text>
-                </Pressable>
-                
+
                 {pickerVisible && (
                     <DateTimePicker
                         value={date}
@@ -325,7 +307,7 @@ const userPage = () => {
                     />
                 )}
 
-                {modalVisible && selectedShiftInfo && selectedShiftInfo.employeeIdx !== -1 &&(
+                {modalVisible && selectedShiftInfo && (
                     <Modal
                         visible={modalVisible}
                         transparent
@@ -346,58 +328,59 @@ const userPage = () => {
                             }}>
                                 <Text style={{color: 'white', fontSize: 20, marginBottom: 16, fontWeight: 'bold'}}>Shift Options</Text>
                                 <Text style={{color: 'white', fontSize: 18, marginBottom: 8, lineHeight: 24}}>
-                                    {`Employee: ${employees[selectedShiftInfo.employeeIdx].name}\n`}
+                                    {selectedShiftInfo.employeeIdx !== -1
+                                        ? `Employee: ${employees[selectedShiftInfo.employeeIdx].name}\n`
+                                        : 'No employee assigned to this shift.\n'}
                                     {`Date: ${selectedShiftInfo.date.toLocaleDateString()}\n`}
                                     {`${selectedShiftInfo.shiftType} shift `}
                                 </Text>
-                                
                                 <Picker
                                     selectedValue={selectedEmployeeIdx}
                                     style={{ height: 50, width: 200, color: 'white', backgroundColor: '#444' }}
                                     onValueChange={(itemValue, itemIndex) => setSelectedEmployeeIdx(itemValue)}
                                 >
-                                    {`Select Employee`}
                                     {employees.map(emp => (
                                         <Picker.Item key={emp.id} label={emp.name} value={emp.id} />
                                     ))}
                                 </Picker>
-
-                                <Pressable onPress={() => {
-                                        if (
-                                            selectedEmployeeIdx !== null
-                                        ) {
-                                            
-                                            week1.forEach((day, idx) => {
+                                <Pressable
+                                    onPress={() => {
+                                        if (selectedEmployeeIdx !== null) {
+                                            // Swap logic: assign selectedEmployeeIdx to the shift
+                                            week1.forEach((day) => {
                                                 if (day.dayDate === selectedShiftInfo.date?.toLocaleDateString()) {
-                                                    if (day.AMshift[0] === selectedShiftInfo.employeeIdx) {
+                                                    if (selectedShiftInfo.shiftType === 'AM') {
                                                         day.AMshift[0] = selectedEmployeeIdx;
-                                                        employees[selectedEmployeeIdx].numShifts++;
-                                                    }
-                                                    if (day.PMshift[0] === selectedShiftInfo.employeeIdx) {
+                                                    } else {
                                                         day.PMshift[0] = selectedEmployeeIdx;
-                                                        employees[selectedEmployeeIdx].numShifts++;
                                                     }
+                                                    employees[selectedEmployeeIdx].numShifts++;
                                                 }
                                             });
-
-                                            week2.forEach((day, idx) => {
+                                            week2.forEach((day) => {
                                                 if (day.dayDate === selectedShiftInfo.date?.toLocaleDateString()) {
-                                                    if (day.AMshift[0] === selectedShiftInfo.employeeIdx) {
+                                                    if (selectedShiftInfo.shiftType === 'AM') {
                                                         day.AMshift[0] = selectedEmployeeIdx;
-                                                        employees[selectedEmployeeIdx].numShifts++;
-                                                    }
-                                                    if (day.PMshift[0] === selectedShiftInfo.employeeIdx) {
+                                                    } else {
                                                         day.PMshift[0] = selectedEmployeeIdx;
-                                                        employees[selectedEmployeeIdx].numShifts++;
                                                     }
+                                                    employees[selectedEmployeeIdx].numShifts++;
                                                 }
                                             });
                                         }
                                         setModalVisible(false);
-                                    }}>
-                                    <Text style={{color: '#00f', fontSize: 18, marginBottom: 8}}>Swap Employee</Text>
+                                    }}
+                                    style={{
+                                        backgroundColor: selectedEmployeeIdx !== null ? '#00f' : '#888',
+                                        borderRadius: 8,
+                                        padding: 8,
+                                        marginTop: 8,
+                                        opacity: selectedEmployeeIdx !== null ? 1 : 0.5
+                                    }}
+                                    disabled={selectedEmployeeIdx === null}
+                                >
+                                    <Text style={{color: '#fff', fontSize: 18, marginBottom: 8}}>Swap Employee</Text>
                                 </Pressable>
-
                                 <Pressable onPress={() => setModalVisible(false)}>
                                     <Text style={{color: '#fff', fontSize: 18}}>Cancel</Text>
                                 </Pressable>
@@ -499,18 +482,20 @@ const userPage = () => {
                         </View>
                     ))}
                 </View>
+                {/* Shuffle shifts */}
+                <Pressable style={[styles.button, { width: '100%', marginTop: 8, borderRadius: 0 }]} onPress={() => {resetShifts();}}>
+                    <Text style={styles.buttonText}>Shuffle Shifts</Text>
+                </Pressable>
+                
             </View>
             
             <View style={styles.separator} />
-            {/* Save and Load Schedule buttons 
+            {/* Save schedule button */}
             <Pressable style={styles.button} onPress={() => saveSchedule({ employees, week1, week2 })}>
                 <Text style={styles.buttonText}>Save Schedule</Text>
             </Pressable>
-            <Pressable style={styles.button} onPress={loadSchedule}>
-                <Text style={styles.buttonText}>Load Schedule</Text>
-            </Pressable>
-            */}
-            <View style={{ width: '90%', padding: 8, backgroundColor: '#444', borderRadius: 8, gap: 8 }}>
+            
+            <View style={{ width: '90%', padding: 8, backgroundColor: '#444', borderRadius: 8, gap: 8, marginBottom: 16 }}>
                 <Text style={styles.title}>Info:</Text>
                 <Text style={{ color: 'white', fontSize: 18, textAlign: 'left' }}>
                     This is a schedule management app for the managers of Aquaguard.
@@ -549,7 +534,8 @@ const styles = StyleSheet.create({
         justifyContent: 'space-between',
         backgroundColor: '#333',
         borderRadius: 8,
-        padding: 8,
+        paddingHorizontal: 8,
+        paddingVertical: 4,
         marginTop: 16,
         width: '90%',
         gap: 8,
@@ -603,7 +589,7 @@ const styles = StyleSheet.create({
     button: {
         backgroundColor: '#008AFF',
         paddingVertical: 3,
-        marginHorizontal: 0,
+        paddingHorizontal: 0,
         marginVertical: 4,
         borderRadius: 8,
     },
@@ -615,10 +601,11 @@ const styles = StyleSheet.create({
         padding: 8,
     },
     separator: {
-    height: 1,
-    backgroundColor: '#666',
-    marginVertical: 1,
-  }
+        height: 1,
+        backgroundColor: '#666',
+        marginVertical: 1,
+    },
+    
 });
 
-export default userPage;
+export default mainpage;
