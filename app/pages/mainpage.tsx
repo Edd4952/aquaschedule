@@ -524,7 +524,7 @@ const styles = StyleSheet.create({
         display: 'flex',
         flexDirection: 'column',
         justifyContent: 'flex-start',
-        backgroundColor: '#222', // Changed to dark background
+        backgroundColor: '#222',
         alignItems: 'center',
         gap: 8,
     },
@@ -546,7 +546,6 @@ const styles = StyleSheet.create({
         flexWrap: 'wrap',
         justifyContent: 'space-between',
         width: '90%',
-
     },
     weekContainer: {
         display: 'flex',
@@ -574,12 +573,10 @@ const styles = StyleSheet.create({
         display: 'flex',
         flexDirection: 'row',
         justifyContent: 'space-between',
-        
     },
     title: {
         fontSize: 28,
         fontWeight: 'bold',
-        
         color: 'white', // White text
     },
     link: {

@@ -1,3 +1,4 @@
+import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Picker } from '@react-native-picker/picker';
 import React, { useEffect, useState } from 'react';
@@ -40,6 +41,10 @@ const SavedPage = () => {
     } | null>(null);
     const [selectedEmployeeIdx, setSelectedEmployeeIdx] = useState<number | null>(null);
 
+    // Modal state for delete confirmation
+    const [deleteModalVisible, setDeleteModalVisible] = useState(false);
+    const [scheduleToDeleteIdx, setScheduleToDeleteIdx] = useState<number | null>(null);
+
     // Load all saved schedules on mount
     useEffect(() => {
         const loadSchedules = async () => {
@@ -71,22 +76,40 @@ const SavedPage = () => {
             <Text style={styles.title}>Saved Schedules</Text>
             <View style={styles.optionsContainer}>
                 {schedules.map((sched, idx) => (
-                    <Pressable
-                        key={sched.savedAt}
-                        style={[
-                            styles.button,
-                            selectedIdx === idx && styles.selectedSchedule // <-- highlight selected
-                        ]}
-                        onPress={() => setSelectedIdx(idx)}
-                    >
-                        <Text style={styles.buttonText}>
-                            {new Date(sched.savedAt).toLocaleString()}
-                        </Text>
-                    </Pressable>
+                    <View key={sched.savedAt} style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
+                        <Pressable
+                            style={[
+                                styles.button,
+                                selectedIdx === idx && styles.selectedSchedule
+                            ]}
+                            onPress={() => setSelectedIdx(idx)}
+                        >
+                            <Text style={styles.buttonText}>
+                                {new Date(sched.savedAt).toLocaleString()}
+                            </Text>
+                        </Pressable>
+                        <Pressable
+                            style={{
+                                flex: 0.9,
+                                paddingVertical: 8,
+                                backgroundColor: '#c00',
+                                borderRadius: 8,
+                                justifyContent: 'center',
+                                alignItems: 'center',
+                            }}
+                            onPress={() => {
+                                setScheduleToDeleteIdx(idx);
+                                setDeleteModalVisible(true);
+                            }}
+                        >
+                            <Ionicons name="trash" size={25} color="#fff" />
+                        </Pressable>
+                    </View>
                 ))}
             </View>
             <View style={styles.separator} />
             <Text style={styles.title}>Schedule Viewer</Text>
+            <View style={styles.separator} />
             {selectedSchedule ? (
                 <View style={styles.scheduleContainer}>
                     <View style={{flexDirection: 'row', justifyContent: 'space-around', width: '100%'}}>
@@ -168,6 +191,8 @@ const SavedPage = () => {
                                 <View style={{
                                     backgroundColor: '#333',
                                     padding: 18,
+                                    margin: 16,
+                                    width: '90%',
                                     borderRadius: 12,
                                     alignItems: 'center'
                                 }}>
@@ -236,6 +261,72 @@ const SavedPage = () => {
                             </View>
                         </Modal>
                     )}
+                    {/* Delete confirmation modal */}
+                    <Modal
+                        visible={deleteModalVisible}
+                        transparent
+                        animationType="fade"
+                        onRequestClose={() => setDeleteModalVisible(false)}
+                    >
+                        <View style={{
+                            flex: 1,
+                            backgroundColor: 'rgba(0,0,0,0.5)',
+                            justifyContent: 'center',
+                            alignItems: 'center',
+                            
+                        }}>
+                            <View style={{
+                                backgroundColor: '#333',
+                                padding: 24,
+                                margin: 16,
+                                borderRadius: 12,
+                                alignItems: 'center'
+                            }}>
+                                <Text style={{ color: 'white', fontSize: 20, fontWeight: 'bold', marginBottom: 16 }}>
+                                    Delete this schedule?
+                                </Text>
+                                <Text style={{ color: 'white', fontSize: 16, marginBottom: 24 }}>
+                                    Are you sure you want to delete this saved schedule? This action cannot be undone.
+                                </Text>
+                                <View style={{ flexDirection: 'row', gap: 16 }}>
+                                    <Pressable
+                                        style={{
+                                            backgroundColor: '#c00',
+                                            borderRadius: 8,
+                                            padding: 12,
+                                            marginRight: 8,
+                                        }}
+                                        onPress={async () => {
+                                            if (scheduleToDeleteIdx !== null) {
+                                                const updatedSchedules = schedules.filter((_, i) => i !== scheduleToDeleteIdx);
+                                                setSchedules(updatedSchedules);
+                                                await AsyncStorage.setItem(SCHEDULES_KEY, JSON.stringify(updatedSchedules));
+                                                if (selectedIdx === scheduleToDeleteIdx) setSelectedIdx(null);
+                                                else if (selectedIdx && selectedIdx > scheduleToDeleteIdx) setSelectedIdx(selectedIdx - 1);
+                                            }
+                                            setDeleteModalVisible(false);
+                                            setScheduleToDeleteIdx(null);
+                                        }}
+                                    >
+                                        <Text style={{ color: '#fff', fontWeight: 'bold', fontSize: 16 }}>Delete</Text>
+                                    </Pressable>
+                                    <Pressable
+                                        style={{
+                                            backgroundColor: '#555',
+                                            borderRadius: 8,
+                                            padding: 12,
+                                        }}
+                                        onPress={() => {
+                                            setDeleteModalVisible(false);
+                                            setScheduleToDeleteIdx(null);
+                                        }}
+                                    >
+                                        <Text style={{ color: '#fff', fontWeight: 'bold', fontSize: 16 }}>Cancel</Text>
+                                    </Pressable>
+                                </View>
+                            </View>
+                        </View>
+                    </Modal>
                 </View>
             ) : (
                 <Text style={styles.title}>Select a schedule to view.</Text>
@@ -305,7 +396,7 @@ const styles = StyleSheet.create({
     title: {
         fontSize: 28,
         fontWeight: 'bold',
-        
+        marginTop: 16,
         color: 'white', // White text
     },
     link: {
@@ -328,7 +419,7 @@ const styles = StyleSheet.create({
     },
     separator: {
         height: 1,
-        backgroundColor: '#666',
+        backgroundColor: '#555',
         marginVertical: 1,
     },
     selectedSchedule: {
