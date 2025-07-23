@@ -5,10 +5,6 @@ import { Ionicons } from '@expo/vector-icons';
 const RootLayout = () => {
   return (
     <Tabs>
-      <Tabs.Screen name="index" options={{
-        headerTitle: "Home",
-        headerShown: false,
-       }} />
       <Tabs.Screen name="mainpage" options={{
         headerTitle: "back",
         headerShown: false,

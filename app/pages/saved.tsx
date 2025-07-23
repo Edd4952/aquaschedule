@@ -1,7 +1,8 @@
 import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Picker } from '@react-native-picker/picker';
-import React, { useEffect, useState } from 'react';
+import { useFocusEffect } from '@react-navigation/native';
+import React, { useState } from 'react';
 import { Modal, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 
 type Employee = {
@@ -45,16 +46,18 @@ const SavedPage = () => {
     const [deleteModalVisible, setDeleteModalVisible] = useState(false);
     const [scheduleToDeleteIdx, setScheduleToDeleteIdx] = useState<number | null>(null);
 
-    // Load all saved schedules on mount
-    useEffect(() => {
-        const loadSchedules = async () => {
-            const raw = await AsyncStorage.getItem(SCHEDULES_KEY);
-            if (raw) {
-                setSchedules(JSON.parse(raw));
-            }
-        };
-        loadSchedules();
-    }, []);
+    // Load all saved schedules when page is focused
+    useFocusEffect(
+        React.useCallback(() => {
+            const loadSchedules = async () => {
+                const raw = await AsyncStorage.getItem(SCHEDULES_KEY);
+                if (raw) {
+                    setSchedules(JSON.parse(raw));
+                }
+            };
+            loadSchedules();
+        }, [])
+    );
 
     // Viewer for the selected schedule
     const selectedSchedule = selectedIdx !== null ? schedules[selectedIdx] : null;
@@ -191,8 +194,6 @@ const SavedPage = () => {
                                 <View style={{
                                     backgroundColor: '#333',
                                     padding: 18,
-                                    margin: 16,
-                                    width: '90%',
                                     borderRadius: 12,
                                     alignItems: 'center'
                                 }}>
@@ -252,9 +253,9 @@ const SavedPage = () => {
                                         }}
                                         disabled={selectedEmployeeIdx === null}
                                     >
-                                        <Text style={{color: '#fff', fontSize: 18, marginBottom: 8}}>Swap Employee</Text>
+                                        <Text style={{color: '#fff', fontSize: 18}}>Swap Employee</Text>
                                     </Pressable>
-                                    <Pressable onPress={() => setModalVisible(false)}>
+                                    <Pressable style={{borderColor: '#888', borderWidth: 1, borderRadius: 8, padding: 8, marginTop: 8}} onPress={() => setModalVisible(false)}>
                                         <Text style={{color: '#fff', fontSize: 18}}>Cancel</Text>
                                     </Pressable>
                                 </View>

@@ -44,8 +44,6 @@ const mainpage = () => {
             alert('Failed to save schedule.');
         }
     };
-    {/* */}
-    
     
     const [selectedShiftInfo, setSelectedShiftInfo] = useState<{
         employeeIdx: number;
@@ -379,9 +377,9 @@ const mainpage = () => {
                                     }}
                                     disabled={selectedEmployeeIdx === null}
                                 >
-                                    <Text style={{color: '#fff', fontSize: 18, marginBottom: 8}}>Swap Employee</Text>
+                                    <Text style={{color: '#fff', fontSize: 18}}>Swap Employee</Text>
                                 </Pressable>
-                                <Pressable onPress={() => setModalVisible(false)}>
+                                <Pressable style={{borderColor: '#888', borderWidth: 1, borderRadius: 8, padding: 8, marginTop: 8}} onPress={() => setModalVisible(false)}>
                                     <Text style={{color: '#fff', fontSize: 18}}>Cancel</Text>
                                 </Pressable>
                             </View>
