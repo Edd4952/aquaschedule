@@ -1,3 +1,4 @@
+import { Ionicons } from '@expo/vector-icons'; // Add this at the top with your imports
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { Picker } from '@react-native-picker/picker';
@@ -279,10 +280,16 @@ const mainpage = () => {
                             setPickerVisible(false);
                             let dayIdx: number | undefined = undefined;
                             if (selectedDate && pickerEmployeeIdx !== null) {
+                                // Only allow days ON or AFTER the starting date
+                                if (selectedDate < date) {
+                                    alert("You cannot add a day off before the starting day of the schedule.");
+                                    setPickerEmployeeIdx(null);
+                                    return;
+                                }
                                 let diffTime = Math.abs(selectedDate.getTime() - date.getTime()); // difference in milliseconds
                                 let diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1; // difference in days
                                 if (selectedDate.getDate() == date.getDate()) {
-                                    diffDays = 1; // if the selected date is before the current date,
+                                    diffDays = 1;
                                 }
                                 dayIdx = diffDays;
                                 setEmployees(emps =>
@@ -490,7 +497,10 @@ const mainpage = () => {
             <View style={styles.separator} />
             {/* Save schedule button */}
             <Pressable style={styles.button} onPress={() => saveSchedule({ employees, week1, week2 })}>
-                <Text style={styles.buttonText}>Save Schedule</Text>
+                <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-around' }}>
+                    <Ionicons name="save" size={22} color="#fff" style={{ marginLeft: 8 }} />
+                    <Text style={styles.buttonText}>Save Schedule</Text>
+                </View>
             </Pressable>
             
             <View style={{ width: '90%', padding: 8, backgroundColor: '#444', borderRadius: 8, gap: 8, marginBottom: 16 }}>

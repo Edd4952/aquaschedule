@@ -79,7 +79,7 @@ const SavedPage = () => {
             <Text style={styles.title}>Saved Schedules</Text>
             <View style={styles.optionsContainer}>
                 {schedules.map((sched, idx) => (
-                    <View key={sched.savedAt} style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
+                    <View key={sched.savedAt} style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
                         <Pressable
                             style={[
                                 styles.button,
@@ -114,7 +114,7 @@ const SavedPage = () => {
             <Text style={styles.title}>Schedule Viewer</Text>
             <View style={styles.separator} />
             {selectedSchedule ? (
-                <View style={styles.scheduleContainer}>
+                <View style={[styles.scheduleContainer, { marginBottom: 10 }]}>
                     <View style={{flexDirection: 'row', justifyContent: 'space-around', width: '100%'}}>
                         <Text style={{color: 'white', fontWeight: 'bold', fontSize: 26}}>Week 1</Text>
                         <Text style={{color: 'white', fontWeight: 'bold', fontSize: 26}}>Week 2</Text>
