@@ -218,27 +218,25 @@ const SavedPage = () => {
                                         onPress={() => {
                                             if (selectedEmployeeIdx !== null) {
                                                 // Swap logic: assign selectedEmployeeIdx to the shift
-                                                if (selectedShiftInfo.week === 1) {
-                                                    const updatedWeek = [...selectedSchedule.week1];
-                                                    if (selectedShiftInfo.shiftType === 'AM') {
-                                                        updatedWeek[selectedShiftInfo.dayIdx].AMshift[0] = selectedEmployeeIdx;
+                                                const updatedSchedules = [...schedules];
+                                                if (selectedIdx !== null) {
+                                                    if (selectedShiftInfo.week === 1) {
+                                                        const updatedWeek = [...selectedSchedule.week1];
+                                                        if (selectedShiftInfo.shiftType === 'AM') {
+                                                            updatedWeek[selectedShiftInfo.dayIdx].AMshift[0] = selectedEmployeeIdx;
+                                                        } else {
+                                                            updatedWeek[selectedShiftInfo.dayIdx].PMshift[0] = selectedEmployeeIdx;
+                                                        }
+                                                        updatedSchedules[selectedIdx].week1 = updatedWeek;
                                                     } else {
-                                                        updatedWeek[selectedShiftInfo.dayIdx].PMshift[0] = selectedEmployeeIdx;
+                                                        const updatedWeek = [...selectedSchedule.week2];
+                                                        if (selectedShiftInfo.shiftType === 'AM') {
+                                                            updatedWeek[selectedShiftInfo.dayIdx].AMshift[0] = selectedEmployeeIdx;
+                                                        } else {
+                                                            updatedWeek[selectedShiftInfo.dayIdx].PMshift[0] = selectedEmployeeIdx;
+                                                        }
+                                                        updatedSchedules[selectedIdx].week2 = updatedWeek;
                                                     }
-                                                    // Update the schedule in state
-                                                    const updatedSchedules = [...schedules];
-                                                    updatedSchedules[selectedEmployeeIdx].week1 = updatedWeek;
-                                                    setSchedules(updatedSchedules);
-                                                } else {
-                                                    const updatedWeek = [...selectedSchedule.week2];
-                                                    if (selectedShiftInfo.shiftType === 'AM') {
-                                                        updatedWeek[selectedShiftInfo.dayIdx].AMshift[0] = selectedEmployeeIdx;
-                                                    } else {
-                                                        updatedWeek[selectedShiftInfo.dayIdx].PMshift[0] = selectedEmployeeIdx;
-                                                    }
-                                                    // Update the schedule in state
-                                                    const updatedSchedules = [...schedules];
-                                                    updatedSchedules[selectedEmployeeIdx].week2 = updatedWeek;
                                                     setSchedules(updatedSchedules);
                                                 }
                                             }
@@ -274,7 +272,6 @@ const SavedPage = () => {
                             backgroundColor: 'rgba(0,0,0,0.5)',
                             justifyContent: 'center',
                             alignItems: 'center',
-                            
                         }}>
                             <View style={{
                                 backgroundColor: '#333',
