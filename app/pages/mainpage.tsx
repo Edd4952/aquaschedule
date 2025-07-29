@@ -31,9 +31,13 @@ const mainpage = () => {
     const [pickerVisible, setPickerVisible] = useState(false);
     const [pickerEmployeeIdx, setPickerEmployeeIdx] = useState<number | null>(null);
     const [selectedEmployeeIdx, setSelectedEmployeeIdx] = useState<number | null>(null);
-    //const [week1, setWeek1] = useState<any[]>([]);
-    //const [week2, setWeek2] = useState<any[]>([]);
+    const [lastUpdated, setLastUpdated] = useState(new Date());
     
+    // Update timestamp whenever employees, week1, week2, or date changes
+    React.useEffect(() => {
+        setLastUpdated(new Date());
+    }, [employees, date]);
+
     const saveSchedule = async (scheduleData: any) => {
         try {
             const raw = await AsyncStorage.getItem('savedSchedules');
@@ -41,6 +45,7 @@ const mainpage = () => {
             const newSchedule = { ...scheduleData, savedAt: new Date().toISOString() };
             await AsyncStorage.setItem('savedSchedules', JSON.stringify([...schedules, newSchedule]));
             alert('Schedule saved!');
+            setLastUpdated(new Date());
         } catch (e) {
             alert('Failed to save schedule.');
         }
@@ -67,6 +72,7 @@ const mainpage = () => {
     
     function resetShifts() {
         setEmployees(employees.map(emp => ({ ...emp, numShifts: 0 })));
+        setLastUpdated(new Date());
     }
     
     function addEmployee() {
@@ -487,13 +493,23 @@ const mainpage = () => {
                         </View>
                     ))}
                 </View>
-                {/* Shuffle shifts */}
-                <Pressable style={[styles.button, { width: '100%', marginTop: 8, borderRadius: 0 }]} onPress={() => {resetShifts();}}>
-                    <Text style={styles.buttonText}>Shuffle Shifts</Text>
-                </Pressable>
-                
             </View>
-            
+            {/* Timestamp */}
+            <View style={{
+                backgroundColor: '#333',
+                width: '90%',
+                alignItems: 'center',
+                justifyContent: 'center',
+                paddingVertical: 8,
+            }}>
+                <Text style={{ color: 'white', fontSize: 18, textAlign: 'center' }}>
+                    Up to date {lastUpdated.toLocaleDateString()} - {lastUpdated.toLocaleTimeString()}
+                </Text>
+            </View>
+            {/* Shuffle shifts */}
+            <Pressable style={[styles.button, { width: '90%', marginTop: 0, borderRadius: 0 }]} onPress={() => {resetShifts();}}>
+                <Text style={styles.buttonText}>Shuffle Shifts</Text>
+            </Pressable>
             <View style={styles.separator} />
             {/* Save schedule button */}
             <Pressable style={styles.button} onPress={() => saveSchedule({ employees, week1, week2 })}>
@@ -518,9 +534,17 @@ const mainpage = () => {
                 <View style= {styles.separator} />
                 <Text style={{ color: 'white', fontSize: 18, textAlign: 'left' }}>
                     Rules in place when shuffled:
-                    {"\n"}- Employees are given a roughly equal number of shifts
                     {"\n"}- Employees are never selected twice in the same day
                     {"\n"}- Employees are never selected on days they cannot work
+                    {"\n"}- Employees are given a roughly equal number of shifts*
+                </Text>
+                <View style= {styles.separator} />
+                <Text style={{ color: 'white', fontSize: 18, textAlign: 'left' }}>
+                    *Every employee is given a roughly equal number of shifts by default.
+                    However, if you wish to set an unequal number of shifts between employees,
+                    long press on their name for each shift and swap them out manually.
+                    The reason for this is to ensure regular balance in the distribution of shifts,
+                    and that the managers are always conscious of any imbalances.
                 </Text>
             </View>
         </ScrollView>

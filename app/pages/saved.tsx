@@ -325,6 +325,12 @@ const SavedPage = () => {
                             </View>
                         </View>
                     </Modal>
+                    {/* Timestamp only when a schedule is open */}
+                    <View style={[styles.optionsContainer, {width: '100%', marginTop: 8, borderRadius: 0, marginHorizontal: 0}]}>
+                        <Text style={{ color: 'white', fontSize: 18, textAlign: 'center' }}>
+                            Up to date {new Date().toLocaleDateString()} - {new Date().toLocaleTimeString()}
+                        </Text>
+                    </View>
                 </View>
             ) : (
                 <Text style={styles.title}>Select a schedule to view.</Text>
@@ -345,7 +351,7 @@ const styles = StyleSheet.create({
     optionsContainer:{
         display: 'flex',
         flexDirection: 'column',
-        justifyContent: 'space-between',
+        justifyContent: 'center',
         backgroundColor: '#333',
         borderRadius: 8,
         paddingHorizontal: 8,
