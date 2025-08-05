@@ -8,6 +8,9 @@ const HomePage = () => {
       <Link style={styles.button} href={{ pathname: "/pages/mainpage", params: { id: "1" } }}>
           <Text style={styles.text}>Make a schedule</Text>
       </Link>
+      <Pressable style={styles.button2} onPress={() => router.push({ pathname: "/pages/saved" })}>
+        <Text style={styles.text}>Saved Schedules</Text>
+      </Pressable>
       <Pressable style={styles.button2} onPress={() => router.push({ pathname: "/pages/about" })}>
         <Text style={styles.text}>About Page</Text>
       </Pressable>

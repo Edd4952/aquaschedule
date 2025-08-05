@@ -14,6 +14,7 @@ type Employee = {
 
 type Day = {
     shortDate: string;
+    fullDate: string;
     AMshift: number[];
     PMshift: number[];
 };
@@ -74,6 +75,8 @@ const SavedPage = () => {
         setModalVisible(true);
     };
 
+    const daysOfWeek = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+
     return (
         <ScrollView contentContainerStyle={styles.container}>
             <Text style={styles.title}>Saved Schedules</Text>
@@ -121,64 +124,74 @@ const SavedPage = () => {
                     </View>
                     {/* week 1 */}
                     <View style={styles.weekContainer}>
-                        {selectedSchedule.week1.map((item, idx) => (
-                            <View key={idx} style={styles.dayContainer}>
-                                <Text style={{color: 'white', fontSize: 18}}>
-                                    {item.shortDate}
-                                </Text>
-                                <View style={styles.cells}>
-                                    <View style={styles.cell}>
-                                        <Text style={{color: 'white', fontSize: 18, fontWeight: 'bold'}}>AM:</Text>
-                                        <Pressable onLongPress={() => handleLongPress(item.AMshift[0], 1, idx, 'AM', new Date(new Date(selectedSchedule.week1[0].shortDate).getFullYear(), new Date(selectedSchedule.week1[0].shortDate).getMonth(), new Date(selectedSchedule.week1[0].shortDate).getDate() + idx))}>
-                                            <Text style={{color: 'white', fontSize: 18, fontWeight: 'bold', backgroundColor: '#444', borderRadius: 4}}>
-                                                {" "}{item.AMshift[0] !== -1 ? selectedSchedule.employees[item.AMshift[0]].name : 'No one'}{" "}
-                                            </Text>
-                                        </Pressable>
-                                    </View>
-                                    <View style={styles.separator} />
-                                    <View style={styles.cell}>
-                                        <Text style={{color: 'white', fontSize: 18, fontWeight: 'bold'}}>PM:</Text>
-                                        <Pressable onLongPress={() => handleLongPress(item.PMshift[0], 1, idx, 'PM', new Date(new Date(selectedSchedule.week1[0].shortDate).getFullYear(), new Date(selectedSchedule.week1[0].shortDate).getMonth(), new Date(selectedSchedule.week1[0].shortDate).getDate() + idx))}>
-                                            <Text style={{color: 'white', fontSize: 18, fontWeight: 'bold', backgroundColor: '#222', borderRadius: 4}}>
-                                                {" "}{item.PMshift[0] !== -1 ? selectedSchedule.employees[item.PMshift[0]].name : 'No one'}{" "}
-                                            </Text>
-                                        </Pressable>
+                        {selectedSchedule.week1.map((item, idx) => {
+                            // Use fullDate to get the day of the week
+                            const dateObj = new Date(item.fullDate);
+                            const dayOfWeek = !isNaN(dateObj.getTime()) ? daysOfWeek[dateObj.getDay()] : '';
+                            return (
+                                <View key={idx} style={styles.dayContainer}>
+                                    <Text style={{color: 'white', fontSize: 18}}>
+                                        {item.shortDate} {dayOfWeek}
+                                    </Text>
+                                    <View style={styles.cells}>
+                                        <View style={styles.cell}>
+                                            <Text style={{color: 'white', fontSize: 18, fontWeight: 'bold'}}>AM:</Text>
+                                            <Pressable onLongPress={() => handleLongPress(item.AMshift[0], 1, idx, 'AM', new Date(item.fullDate))}>
+                                                <Text style={{color: 'white', fontSize: 18, fontWeight: 'bold', backgroundColor: '#444', borderRadius: 4}}>
+                                                    {" "}{item.AMshift[0] !== -1 ? selectedSchedule.employees[item.AMshift[0]].name : 'No one'}{" "}
+                                                </Text>
+                                            </Pressable>
+                                        </View>
+                                        <View style={styles.separator} />
+                                        <View style={styles.cell}>
+                                            <Text style={{color: 'white', fontSize: 18, fontWeight: 'bold'}}>PM:</Text>
+                                            <Pressable onLongPress={() => handleLongPress(item.PMshift[0], 1, idx, 'PM', new Date(item.fullDate))}>
+                                                <Text style={{color: 'white', fontSize: 18, fontWeight: 'bold', backgroundColor: '#222', borderRadius: 4}}>
+                                                    {" "}{item.PMshift[0] !== -1 ? selectedSchedule.employees[item.PMshift[0]].name : 'No one'}{" "}
+                                                </Text>
+                                            </Pressable>
+                                        </View>
                                     </View>
                                 </View>
-                            </View>
-                        ))}
+                            );
+                        })}
                     </View>
                     {/* week 2 */}
                     <View style={styles.weekContainer}>
-                        {selectedSchedule.week2.map((item, idx) => (
-                            <View key={idx} style={styles.dayContainer}>
-                                <Text style={{color: 'white', fontSize: 18}}>
-                                    {item.shortDate}
-                                </Text>
-                                <View style={styles.cells}>
-                                    <View style={styles.cell}>
-                                        <Text style={{color: 'white', fontSize: 18, fontWeight: 'bold'}}>AM:</Text>
-                                        <Pressable onLongPress={() => handleLongPress(item.AMshift[0], 2, idx, 'AM', new Date(new Date(selectedSchedule.week2[0].shortDate).getFullYear(), new Date(selectedSchedule.week2[0].shortDate).getMonth(), new Date(selectedSchedule.week2[0].shortDate).getDate() + idx))}>
-                                            <Text style={{color: 'white', fontSize: 18, fontWeight: 'bold', backgroundColor: '#444', borderRadius: 4}}>
-                                                {" "}{item.AMshift[0] !== -1 ? selectedSchedule.employees[item.AMshift[0]].name : 'No one'}{" "}
-                                            </Text>
-                                        </Pressable>
-                                    </View>
-                                    <View style={styles.separator} />
-                                    <View style={styles.cell}>
-                                        <Text style={{color: 'white', fontSize: 18, fontWeight: 'bold'}}>PM:</Text>
-                                        <Pressable onLongPress={() => handleLongPress(item.PMshift[0], 2, idx, 'PM', new Date(new Date(selectedSchedule.week2[0].shortDate).getFullYear(), new Date(selectedSchedule.week2[0].shortDate).getMonth(), new Date(selectedSchedule.week2[0].shortDate).getDate() + idx))}>
-                                            <Text style={{color: 'white', fontSize: 18, fontWeight: 'bold', backgroundColor: '#222', borderRadius: 4}}>
-                                                {" "}{item.PMshift[0] !== -1 ? selectedSchedule.employees[item.PMshift[0]].name : 'No one'}{" "}
-                                            </Text>
-                                        </Pressable>
+                        {selectedSchedule.week2.map((item, idx) => {
+                            const dateObj = new Date(item.fullDate);
+                            const dayOfWeek = !isNaN(dateObj.getTime()) ? daysOfWeek[dateObj.getDay()] : '';
+                            return (
+                                <View key={idx} style={styles.dayContainer}>
+                                    <Text style={{color: 'white', fontSize: 18}}>
+                                        {item.shortDate} {dayOfWeek}
+                                    </Text>
+                                    <View style={styles.cells}>
+                                        <View style={styles.cell}>
+                                            <Text style={{color: 'white', fontSize: 18, fontWeight: 'bold'}}>AM:</Text>
+                                            <Pressable onLongPress={() => handleLongPress(item.AMshift[0], 2, idx, 'AM', new Date(item.fullDate))}>
+                                                <Text style={{color: 'white', fontSize: 18, fontWeight: 'bold', backgroundColor: '#444', borderRadius: 4}}>
+                                                    {" "}{item.AMshift[0] !== -1 ? selectedSchedule.employees[item.AMshift[0]].name : 'No one'}{" "}
+                                                </Text>
+                                            </Pressable>
+                                        </View>
+                                        <View style={styles.separator} />
+                                        <View style={styles.cell}>
+                                            <Text style={{color: 'white', fontSize: 18, fontWeight: 'bold'}}>PM:</Text>
+                                            <Pressable onLongPress={() => handleLongPress(item.PMshift[0], 2, idx, 'PM', new Date(item.fullDate))}>
+                                                <Text style={{color: 'white', fontSize: 18, fontWeight: 'bold', backgroundColor: '#222', borderRadius: 4}}>
+                                                    {" "}{item.PMshift[0] !== -1 ? selectedSchedule.employees[item.PMshift[0]].name : 'No one'}{" "}
+                                                </Text>
+                                            </Pressable>
+                                        </View>
                                     </View>
                                 </View>
-                            </View>
-                        ))}
+                            );
+                        })}
                     </View>
                     {/* Swap Modal */}
                     {modalVisible && selectedShiftInfo && (
+                        
                         <Modal
                             visible={modalVisible}
                             transparent
@@ -202,7 +215,9 @@ const SavedPage = () => {
                                         {selectedShiftInfo.employeeIdx !== -1
                                             ? `Employee: ${selectedSchedule.employees[selectedShiftInfo.employeeIdx].name}\n`
                                             : 'No employee assigned to this shift.\n'}
-                                        {`Date: ${selectedShiftInfo.date.toLocaleDateString()}\n`}
+                                        {selectedShiftInfo.week === 1
+                                            ? `Date: ${selectedSchedule.week1[selectedShiftInfo.dayIdx].shortDate}\n`
+                                            : `Date: ${selectedSchedule.week2[selectedShiftInfo.dayIdx].shortDate}\n`}
                                         {`${selectedShiftInfo.shiftType} shift `}
                                     </Text>
                                     <Picker
@@ -238,6 +253,7 @@ const SavedPage = () => {
                                                         updatedSchedules[selectedIdx].week2 = updatedWeek;
                                                     }
                                                     setSchedules(updatedSchedules);
+                                                    AsyncStorage.setItem(SCHEDULES_KEY, JSON.stringify(updatedSchedules));
                                                 }
                                             }
                                             setModalVisible(false);
@@ -327,14 +343,18 @@ const SavedPage = () => {
                     </Modal>
                     {/* Timestamp only when a schedule is open */}
                     <View style={[styles.optionsContainer, {width: '100%', marginTop: 8, borderRadius: 0, marginHorizontal: 0}]}>
-                        <Text style={{ color: 'white', fontSize: 18, textAlign: 'center' }}>
+                        <Text style={{ color: 'white', fontSize: 18, textAlign: 'center', paddingVertical: 4 }}>
                             Up to date {new Date().toLocaleDateString()} - {new Date().toLocaleTimeString()}
                         </Text>
                     </View>
                 </View>
             ) : (
-                <Text style={styles.title}>Select a schedule to view.</Text>
+                <View>
+                    <Text style={styles.title}>Select a schedule to view.</Text>
+                    
+                </View>
             )}
+            
         </ScrollView>
     );
 };
@@ -342,11 +362,13 @@ const SavedPage = () => {
 const styles = StyleSheet.create({
     container: {
         display: 'flex',
+        
         flexDirection: 'column',
         justifyContent: 'flex-start',
-        backgroundColor: '#222', // Changed to dark background
+        backgroundColor: '#222',
         alignItems: 'center',
         gap: 8,
+        
     },
     optionsContainer:{
         display: 'flex',
@@ -366,8 +388,6 @@ const styles = StyleSheet.create({
         flexWrap: 'wrap',
         justifyContent: 'space-between',
         width: '90%',
-        
-
     },
     weekContainer: {
         display: 'flex',
@@ -390,6 +410,7 @@ const styles = StyleSheet.create({
         paddingLeft: 8,
         flexDirection: 'column',
         alignSelf: 'stretch',
+        
     },
     cell: {
         display: 'flex',

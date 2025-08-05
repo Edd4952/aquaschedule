@@ -342,7 +342,9 @@ const mainpage = () => {
                                     {selectedShiftInfo.employeeIdx !== -1
                                         ? `Employee: ${employees[selectedShiftInfo.employeeIdx].name}\n`
                                         : 'No employee assigned to this shift.\n'}
-                                    {`Date: ${selectedShiftInfo.date.toLocaleDateString()}\n`}
+                                    {selectedShiftInfo.week === 1
+                                            ? `Date: ${week1[selectedShiftInfo.dayIdx].shortDate}\n`
+                                            : `Date: ${week2[selectedShiftInfo.dayIdx].shortDate}\n`}
                                     {`${selectedShiftInfo.shiftType} shift `}
                                 </Text>
                                 <Picker
@@ -357,7 +359,7 @@ const mainpage = () => {
                                 <Pressable
                                     onPress={() => {
                                         if (selectedEmployeeIdx !== null) {
-                                            // Swap logic: assign selectedEmployeeIdx to the shift
+                                            // Swap logic: replace employees[selectedShiftInfo.employeeIdx].name with selectedEmployeeIdx
                                             week1.forEach((day) => {
                                                 if (day.dayDate === selectedShiftInfo.date?.toLocaleDateString()) {
                                                     if (selectedShiftInfo.shiftType === 'AM') {
@@ -366,6 +368,7 @@ const mainpage = () => {
                                                         day.PMshift[0] = selectedEmployeeIdx;
                                                     }
                                                     employees[selectedEmployeeIdx].numShifts++;
+                                                    employees[selectedShiftInfo.employeeIdx].numShifts--;
                                                 }
                                             });
                                             week2.forEach((day) => {
@@ -376,6 +379,7 @@ const mainpage = () => {
                                                         day.PMshift[0] = selectedEmployeeIdx;
                                                     }
                                                     employees[selectedEmployeeIdx].numShifts++;
+                                                    employees[selectedShiftInfo.employeeIdx].numShifts--;
                                                 }
                                             });
                                         }
@@ -411,7 +415,9 @@ const mainpage = () => {
             <Text style={styles.title}>Your Schedule:</Text>
             
             {/*actual schedule goes here*/}
-            
+            <View style={{ width: '90%', alignItems: 'center', padding: 4, backgroundColor: '#222', borderRadius: 8 }}>
+                <Text style={{fontSize: 18, color: 'white'}}>Hold on an employee name to swap</Text>
+            </View>
             <View style={styles.scheduleContainer}>
                 <View style= {{flexDirection: 'row', justifyContent: 'space-around', width: '100%'}}>
                     <Text style={{color: 'white', fontWeight: 'bold', fontSize: 26}}>Week 1</Text>
@@ -520,7 +526,7 @@ const mainpage = () => {
             </Pressable>
             
             <View style={{ width: '90%', padding: 8, backgroundColor: '#444', borderRadius: 8, gap: 8, marginBottom: 16 }}>
-                <Text style={styles.title}>Info:</Text>
+            <Text style={styles.title}>Info:</Text>
                 <Text style={{ color: 'white', fontSize: 18, textAlign: 'left' }}>
                     This is a schedule management app for the managers of Aquaguard.
                 </Text>
