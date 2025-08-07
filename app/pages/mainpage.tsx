@@ -90,6 +90,8 @@ const mainpage = () => {
         return filterCantWork.length > 0 ? filterCantWork[Math.floor(Math.random() * filterCantWork.length)].id : -1;
     }
     
+    const daysOfWeek = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+
     const week1 = (useMemo(() => {
         let localEmployees = employees.map(emp => ({ ...emp })); // Make a copy for counting
         return Array.from({ length: 7 }, (_, i) => {
@@ -115,13 +117,13 @@ const mainpage = () => {
             }
             return {
                 day,
-                dayDate,
+                date: new Date(date.getFullYear(), date.getMonth(), date.getDate() + i + 1).toISOString().slice(0, 10), // <-- ISO date string
                 shortDate,
                 AMshift: [AMshift],
                 PMshift: [PMshift],
             };
         });
-    }, [employees, date, ]));
+    }, [employees, date]));
 
     const week2 = (useMemo(() => {
         return Array.from({ length: 7 }, (_, i) => {
@@ -147,7 +149,7 @@ const mainpage = () => {
             }
             return {
                 day,
-                dayDate,
+                date: new Date(date.getFullYear(), date.getMonth(), date.getDate() + i + 1).toISOString().slice(0, 10), // <-- ISO date string
                 shortDate,
                 AMshift: [AMshift],
                 PMshift: [PMshift],
@@ -361,7 +363,7 @@ const mainpage = () => {
                                         if (selectedEmployeeIdx !== null) {
                                             // Swap logic: replace employees[selectedShiftInfo.employeeIdx].name with selectedEmployeeIdx
                                             week1.forEach((day) => {
-                                                if (day.dayDate === selectedShiftInfo.date?.toLocaleDateString()) {
+                                                if (day.date === selectedShiftInfo.date?.toLocaleDateString()) {
                                                     if (selectedShiftInfo.shiftType === 'AM') {
                                                         day.AMshift[0] = selectedEmployeeIdx;
                                                     } else {
@@ -372,7 +374,7 @@ const mainpage = () => {
                                                 }
                                             });
                                             week2.forEach((day) => {
-                                                if (day.dayDate === selectedShiftInfo.date?.toLocaleDateString()) {
+                                                if (day.date === selectedShiftInfo.date?.toLocaleDateString()) {
                                                     if (selectedShiftInfo.shiftType === 'AM') {
                                                         day.AMshift[0] = selectedEmployeeIdx;
                                                     } else {
@@ -427,77 +429,84 @@ const mainpage = () => {
                 {/* week 1 */}
                 
                 <View style={styles.weekContainer}>   
-                    {week1.map((item, idx) => (
-                        <View key={idx} style={styles.dayContainer}>
-                        
-                            <Text style={{color: 'white', fontSize: 18}}>
-                                {item.shortDate}
-                            </Text>
-                            
-                            <View style={styles.cells}>
+                    {week1.map((item, idx) => {
+                        // Calculate the date for this day
+                        const dateObj = new Date(date.getFullYear(), date.getMonth(), date.getDate() + idx);
+                        const dayOfWeek = daysOfWeek[dateObj.getDay()];
+                        return (
+                            <View key={idx} style={styles.dayContainer}>
+                                <Text style={{color: 'white', fontSize: 18, lineHeight: 26}}>
+                                    {item.shortDate}{'\n'}{dayOfWeek}
+                                </Text>
                                 
-                                <View style={styles.cell}>
-                                    <Text style={{color: 'white', fontSize: 18, fontWeight: 'bold', }}>
-                                        AM:
-                                    </Text>
-                                    <Pressable onLongPress={() => handleLongPress(item.AMshift[0], 1, idx, 'AM', new Date(date.getFullYear(), date.getMonth(), date.getDate() + idx))}>
-                                        <Text style={{color: 'white', fontSize: 18, fontWeight: 'bold', backgroundColor: '#444', borderRadius: 4}}>
-                                            {" "}{item.AMshift[0] !== -1 ? employees[item.AMshift[0]].name : 'No one'}{" "}
+                                <View style={styles.cells}>
+                                    
+                                    <View style={styles.cell}>
+                                        <Text style={{color: 'white', fontSize: 18, fontWeight: 'bold', }}>
+                                            AM:
                                         </Text>
-                                    </Pressable>
-                                </View>
-                                <View style={styles.separator} />
-                                <View style={styles.cell}>
-                                    <Text style={{color: 'white', fontSize: 18, fontWeight: 'bold'}}>
-                                        PM:
-                                    </Text>
-                                    <Pressable onLongPress={() => handleLongPress(item.PMshift[0], 1, idx, 'PM', new Date(date.getFullYear(), date.getMonth(), date.getDate() + idx))}>
-                                        <Text style={{color: 'white', fontSize: 18, fontWeight: 'bold', backgroundColor: '#222', borderRadius: 4}}>
-                                            {" "}{item.PMshift[0] !== -1 ? employees[item.PMshift[0]].name : 'No one'}{" "}
+                                        <Pressable onLongPress={() => handleLongPress(item.AMshift[0], 1, idx, 'AM', new Date(date.getFullYear(), date.getMonth(), date.getDate() + idx))}>
+                                            <Text style={{color: 'white', fontSize: 18, fontWeight: 'bold', backgroundColor: '#444', borderRadius: 4}}>
+                                                {" "}{item.AMshift[0] !== -1 ? employees[item.AMshift[0]].name : 'No one'}{" "}
+                                            </Text>
+                                        </Pressable>
+                                    </View>
+                                    <View style={styles.separator} />
+                                    <View style={styles.cell}>
+                                        <Text style={{color: 'white', fontSize: 18, fontWeight: 'bold'}}>
+                                            PM:
                                         </Text>
-                                    </Pressable>
+                                        <Pressable onLongPress={() => handleLongPress(item.PMshift[0], 1, idx, 'PM', new Date(date.getFullYear(), date.getMonth(), date.getDate() + idx))}>
+                                            <Text style={{color: 'white', fontSize: 18, fontWeight: 'bold', backgroundColor: '#222', borderRadius: 4}}>
+                                                {" "}{item.PMshift[0] !== -1 ? employees[item.PMshift[0]].name : 'No one'}{" "}
+                                            </Text>
+                                        </Pressable>
+                                    </View>
                                 </View>
                             </View>
-                        </View>
-                    ))}
+                        );
+                    })}
                 </View>
                 
                 {/* week 2 */}
 
                 <View style={styles.weekContainer}>   
-                    {week2.map((item, idx) => (
-                        <View key={idx} style={styles.dayContainer}>
-                        
-                            <Text style={{color: 'white', fontSize: 18}}>
-                                {item.shortDate}
-                            </Text>
-                            
-                            <View style={styles.cells}>
+                    {week2.map((item, idx) => {
+                        const dateObj = new Date(date.getFullYear(), date.getMonth(), date.getDate() + idx + 7);
+                        const dayOfWeek = daysOfWeek[dateObj.getDay()];
+                        return (
+                            <View key={idx} style={styles.dayContainer}>
+                                <Text style={{color: 'white', fontSize: 18, lineHeight: 26}}>
+                                    {item.shortDate}{'\n'}{dayOfWeek}
+                                </Text>
                                 
-                                <View style={styles.cell}>
-                                    <Text style={{color: 'white', fontSize: 18, fontWeight: 'bold', }}>
-                                        AM:
-                                    </Text>
-                                    <Pressable onLongPress={() => handleLongPress(item.AMshift[0], 2, idx, 'AM', new Date(date.getFullYear(), date.getMonth(), date.getDate() + idx + 7))}>
-                                        <Text style={{color: 'white', fontSize: 18, fontWeight: 'bold', backgroundColor: '#444', borderRadius: 4}}>
-                                            {" "}{item.AMshift[0] !== -1 ? employees[item.AMshift[0]].name : 'No one'}{" "}
+                                <View style={styles.cells}>
+                                    
+                                    <View style={styles.cell}>
+                                        <Text style={{color: 'white', fontSize: 18, fontWeight: 'bold', }}>
+                                            AM:
                                         </Text>
-                                    </Pressable>
-                                </View>
-                                <View style={styles.separator} />
-                                <View style={styles.cell}>
-                                    <Text style={{color: 'white', fontSize: 18, fontWeight: 'bold'}}>
-                                        PM:
-                                    </Text>
-                                    <Pressable onLongPress={() => handleLongPress(item.PMshift[0], 2, idx, 'PM', new Date(date.getFullYear(), date.getMonth(), date.getDate() + idx + 7))}>
-                                        <Text style={{color: 'white', fontSize: 18, fontWeight: 'bold', backgroundColor: '#222', borderRadius: 4}}>
-                                            {" "}{item.PMshift[0] !== -1 ? employees[item.PMshift[0]].name : 'No one'}{" "}
+                                        <Pressable onLongPress={() => handleLongPress(item.AMshift[0], 2, idx, 'AM', new Date(date.getFullYear(), date.getMonth(), date.getDate() + idx + 7))}>
+                                            <Text style={{color: 'white', fontSize: 18, fontWeight: 'bold', backgroundColor: '#444', borderRadius: 4}}>
+                                                {" "}{item.AMshift[0] !== -1 ? employees[item.AMshift[0]].name : 'No one'}{" "}
+                                            </Text>
+                                        </Pressable>
+                                    </View>
+                                    <View style={styles.separator} />
+                                    <View style={styles.cell}>
+                                        <Text style={{color: 'white', fontSize: 18, fontWeight: 'bold'}}>
+                                            PM:
                                         </Text>
-                                    </Pressable>
+                                        <Pressable onLongPress={() => handleLongPress(item.PMshift[0], 2, idx, 'PM', new Date(date.getFullYear(), date.getMonth(), date.getDate() + idx + 7))}>
+                                            <Text style={{color: 'white', fontSize: 18, fontWeight: 'bold', backgroundColor: '#222', borderRadius: 4}}>
+                                                {" "}{item.PMshift[0] !== -1 ? employees[item.PMshift[0]].name : 'No one'}{" "}
+                                            </Text>
+                                        </Pressable>
+                                    </View>
                                 </View>
                             </View>
-                        </View>
-                    ))}
+                        );
+                    })}
                 </View>
             </View>
             {/* Timestamp */}

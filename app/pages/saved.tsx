@@ -14,7 +14,7 @@ type Employee = {
 
 type Day = {
     shortDate: string;
-    fullDate: string;
+    date: string;
     AMshift: number[];
     PMshift: number[];
 };
@@ -28,6 +28,30 @@ type Schedule = {
 
 const SCHEDULES_KEY = 'savedSchedules';
 
+//
+function generateWeek(startDate: Date): Day[] {
+    return Array.from({ length: 7 }).map((_, idx) => {
+        const date1 = new Date(startDate);
+        date1.setDate(startDate.getDate() + idx);
+        return {
+            shortDate: `${date1.getMonth() + 1}/${date1.getDate()}`, // e.g., "8/5"
+            date: date1.toISOString().slice(0, 10),             // e.g., "2024-08-05"
+            AMshift: [-1],
+            PMshift: [-1],
+        };
+    });
+}
+
+const week1 = generateWeek(new Date("2024-08-05")); // Replace with your actual week start date
+const week2 = generateWeek(new Date("2024-08-12")); // Next week, for example
+
+const schedule: Schedule = {
+    employees: [], // your employees array
+    week1,
+    week2,
+    savedAt: new Date().toISOString(),
+};
+//
 const SavedPage = () => {
     const [schedules, setSchedules] = useState<Schedule[]>([]);
     const [selectedIdx, setSelectedIdx] = useState<number | null>(null);
@@ -53,7 +77,9 @@ const SavedPage = () => {
             const loadSchedules = async () => {
                 const raw = await AsyncStorage.getItem(SCHEDULES_KEY);
                 if (raw) {
-                    setSchedules(JSON.parse(raw));
+                    const parsed = JSON.parse(raw);
+                    console.log(parsed);
+                    setSchedules(parsed);
                 }
             };
             loadSchedules();
@@ -126,31 +152,37 @@ const SavedPage = () => {
                     <View style={styles.weekContainer}>
                         {selectedSchedule.week1.map((item, idx) => {
                             // Use fullDate to get the day of the week
-                            const dateObj = new Date(item.fullDate);
+                            const dateObj = new Date(item.date);
                             const dayOfWeek = !isNaN(dateObj.getTime()) ? daysOfWeek[dateObj.getDay()] : '';
+                            
                             return (
                                 <View key={idx} style={styles.dayContainer}>
-                                    <Text style={{color: 'white', fontSize: 18}}>
-                                        {item.shortDate} {dayOfWeek}
+                                    <Text style={{color: 'white', fontSize: 18, lineHeight: 26}}>
+                                        {item.shortDate}{'\n'}{dayOfWeek}
                                     </Text>
+                                    
                                     <View style={styles.cells}>
+
                                         <View style={styles.cell}>
                                             <Text style={{color: 'white', fontSize: 18, fontWeight: 'bold'}}>AM:</Text>
-                                            <Pressable onLongPress={() => handleLongPress(item.AMshift[0], 1, idx, 'AM', new Date(item.fullDate))}>
+                                            <Pressable onLongPress={() => handleLongPress(item.AMshift[0], 1, idx, 'AM', new Date(item.date))}>
                                                 <Text style={{color: 'white', fontSize: 18, fontWeight: 'bold', backgroundColor: '#444', borderRadius: 4}}>
                                                     {" "}{item.AMshift[0] !== -1 ? selectedSchedule.employees[item.AMshift[0]].name : 'No one'}{" "}
                                                 </Text>
                                             </Pressable>
                                         </View>
+                                        
                                         <View style={styles.separator} />
+                                        
                                         <View style={styles.cell}>
                                             <Text style={{color: 'white', fontSize: 18, fontWeight: 'bold'}}>PM:</Text>
-                                            <Pressable onLongPress={() => handleLongPress(item.PMshift[0], 1, idx, 'PM', new Date(item.fullDate))}>
+                                            <Pressable onLongPress={() => handleLongPress(item.PMshift[0], 1, idx, 'PM', new Date(item.date))}>
                                                 <Text style={{color: 'white', fontSize: 18, fontWeight: 'bold', backgroundColor: '#222', borderRadius: 4}}>
                                                     {" "}{item.PMshift[0] !== -1 ? selectedSchedule.employees[item.PMshift[0]].name : 'No one'}{" "}
                                                 </Text>
                                             </Pressable>
                                         </View>
+                                        
                                     </View>
                                 </View>
                             );
@@ -159,17 +191,19 @@ const SavedPage = () => {
                     {/* week 2 */}
                     <View style={styles.weekContainer}>
                         {selectedSchedule.week2.map((item, idx) => {
-                            const dateObj = new Date(item.fullDate);
+                            const dateObj = new Date(item.date);
                             const dayOfWeek = !isNaN(dateObj.getTime()) ? daysOfWeek[dateObj.getDay()] : '';
+                            
                             return (
                                 <View key={idx} style={styles.dayContainer}>
-                                    <Text style={{color: 'white', fontSize: 18}}>
-                                        {item.shortDate} {dayOfWeek}
+                                    <Text style={{color: 'white', fontSize: 18, lineHeight: 26}}>
+                                        {item.shortDate}{'\n'}{dayOfWeek}
                                     </Text>
+                                    
                                     <View style={styles.cells}>
                                         <View style={styles.cell}>
                                             <Text style={{color: 'white', fontSize: 18, fontWeight: 'bold'}}>AM:</Text>
-                                            <Pressable onLongPress={() => handleLongPress(item.AMshift[0], 2, idx, 'AM', new Date(item.fullDate))}>
+                                            <Pressable onLongPress={() => handleLongPress(item.AMshift[0], 2, idx, 'AM', new Date(item.date))}>
                                                 <Text style={{color: 'white', fontSize: 18, fontWeight: 'bold', backgroundColor: '#444', borderRadius: 4}}>
                                                     {" "}{item.AMshift[0] !== -1 ? selectedSchedule.employees[item.AMshift[0]].name : 'No one'}{" "}
                                                 </Text>
@@ -178,7 +212,7 @@ const SavedPage = () => {
                                         <View style={styles.separator} />
                                         <View style={styles.cell}>
                                             <Text style={{color: 'white', fontSize: 18, fontWeight: 'bold'}}>PM:</Text>
-                                            <Pressable onLongPress={() => handleLongPress(item.PMshift[0], 2, idx, 'PM', new Date(item.fullDate))}>
+                                            <Pressable onLongPress={() => handleLongPress(item.PMshift[0], 2, idx, 'PM', new Date(item.date))}>
                                                 <Text style={{color: 'white', fontSize: 18, fontWeight: 'bold', backgroundColor: '#222', borderRadius: 4}}>
                                                     {" "}{item.PMshift[0] !== -1 ? selectedSchedule.employees[item.PMshift[0]].name : 'No one'}{" "}
                                                 </Text>
@@ -362,13 +396,11 @@ const SavedPage = () => {
 const styles = StyleSheet.create({
     container: {
         display: 'flex',
-        
         flexDirection: 'column',
         justifyContent: 'flex-start',
         backgroundColor: '#222',
         alignItems: 'center',
         gap: 8,
-        
     },
     optionsContainer:{
         display: 'flex',
@@ -410,13 +442,11 @@ const styles = StyleSheet.create({
         paddingLeft: 8,
         flexDirection: 'column',
         alignSelf: 'stretch',
-        
     },
     cell: {
         display: 'flex',
         flexDirection: 'row',
         justifyContent: 'space-between',
-        
     },
     title: {
         fontSize: 28,
