@@ -2,7 +2,7 @@ import { Ionicons } from '@expo/vector-icons'; // Add this at the top with your 
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { Picker } from '@react-native-picker/picker';
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { Modal, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 
 type Employee = {
@@ -10,6 +10,14 @@ type Employee = {
     name: string;
     numShifts: number;
     daysCantWork: number[];
+};
+
+type Day = {
+    day: number;
+    date: string;
+    shortDate: string;
+    AMshift: number[];
+    PMshift: number[];
 };
 
 const employeeList: Employee[] = [
@@ -92,9 +100,13 @@ const mainpage = () => {
     
     const daysOfWeek = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 
-    const week1 = (useMemo(() => {
-        let localEmployees = employees.map(emp => ({ ...emp })); // Make a copy for counting
-        return Array.from({ length: 7 }, (_, i) => {
+    const [week1, setWeek1] = useState<Day[]>([]);
+    const [week2, setWeek2] = useState<Day[]>([]);
+
+    useEffect(() => {
+        // Generate week1 and week2 when employees or date changes
+        let localEmployees = employees.map(emp => ({ ...emp }));
+        const newWeek1 = Array.from({ length: 7 }, (_, i) => {
 
             let AMshift = findNewEmplFromList(-1, localEmployees, i + 1);
             if (AMshift !== -1) {
@@ -117,16 +129,13 @@ const mainpage = () => {
             }
             return {
                 day,
-                date: new Date(date.getFullYear(), date.getMonth(), date.getDate() + i + 1).toISOString().slice(0, 10), // <-- ISO date string
+                date: new Date(date.getFullYear(), date.getMonth(), date.getDate() + i).toISOString().slice(0, 10), // <-- ISO date string
                 shortDate,
                 AMshift: [AMshift],
                 PMshift: [PMshift],
             };
         });
-    }, [employees, date]));
-
-    const week2 = (useMemo(() => {
-        return Array.from({ length: 7 }, (_, i) => {
+        const newWeek2 = Array.from({ length: 7 }, (_, i) => {
             let localEmployees = [...employees]; // Make a copy for counting
             let AMshift = findNewEmplFromList(-1, localEmployees, i + 1 + 7);
             if (AMshift !== -1) {
@@ -155,7 +164,9 @@ const mainpage = () => {
                 PMshift: [PMshift],
             };
         });
-    }, [employees, date]));
+        setWeek1(newWeek1);
+        setWeek2(newWeek2);
+    }, [employees, date]);
     
 
     const onChange = (event: any, selectedDate?: Date | undefined) => {
@@ -384,8 +395,29 @@ const mainpage = () => {
                                                     employees[selectedShiftInfo.employeeIdx].numShifts--;
                                                 }
                                             });
+                                            if (selectedShiftInfo.week === 1) {
+                                                setWeek1(prevWeek1 => {
+                                                    const updated = [...prevWeek1];
+                                                    if (selectedShiftInfo.shiftType === 'AM') {
+                                                        updated[selectedShiftInfo.dayIdx].AMshift[0] = selectedEmployeeIdx;
+                                                    } else {
+                                                        updated[selectedShiftInfo.dayIdx].PMshift[0] = selectedEmployeeIdx;
+                                                    }
+                                                    return updated;
+                                                });
+                                            } else if (selectedShiftInfo.week === 2) {
+                                                setWeek2(prevWeek2 => {
+                                                    const updated = [...prevWeek2];
+                                                    if (selectedShiftInfo.shiftType === 'AM') {
+                                                        updated[selectedShiftInfo.dayIdx].AMshift[0] = selectedEmployeeIdx;
+                                                    } else {
+                                                        updated[selectedShiftInfo.dayIdx].PMshift[0] = selectedEmployeeIdx;
+                                                    }
+                                                    return updated;
+                                                });
+                                            }
+                                            setModalVisible(false);
                                         }
-                                        setModalVisible(false);
                                     }}
                                     style={{
                                         backgroundColor: selectedEmployeeIdx !== null ? '#00f' : '#888',

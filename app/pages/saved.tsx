@@ -103,8 +103,21 @@ const SavedPage = () => {
 
     const daysOfWeek = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 
+    if (schedules.length === 0) {
+        return (
+            <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#222' }}>
+                <Text style={{ color: 'white', fontSize: 22, textAlign: 'center', width: '80%' }}>
+                    No saved schedules yet. Create a schedule first, and save it.
+                </Text>
+            </View>
+        );
+    }
+
     return (
-        <ScrollView contentContainerStyle={styles.container}>
+        <ScrollView
+            style={{ flex: 1 }}
+            contentContainerStyle={styles.container}
+        >
             <Text style={styles.title}>Saved Schedules</Text>
             <View style={styles.optionsContainer}>
                 {schedules.map((sched, idx) => (
@@ -383,9 +396,8 @@ const SavedPage = () => {
                     </View>
                 </View>
             ) : (
-                <View>
+                <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', width: '90%' }}>
                     <Text style={styles.title}>Select a schedule to view.</Text>
-                    
                 </View>
             )}
             
@@ -401,6 +413,7 @@ const styles = StyleSheet.create({
         backgroundColor: '#222',
         alignItems: 'center',
         gap: 8,
+        minHeight: '100%', // Add this line
     },
     optionsContainer:{
         display: 'flex',
