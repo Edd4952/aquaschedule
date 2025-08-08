@@ -373,28 +373,7 @@ const mainpage = () => {
                                     onPress={() => {
                                         if (selectedEmployeeIdx !== null) {
                                             // Swap logic: replace employees[selectedShiftInfo.employeeIdx].name with selectedEmployeeIdx
-                                            week1.forEach((day) => {
-                                                if (day.date === selectedShiftInfo.date?.toLocaleDateString()) {
-                                                    if (selectedShiftInfo.shiftType === 'AM') {
-                                                        day.AMshift[0] = selectedEmployeeIdx;
-                                                    } else {
-                                                        day.PMshift[0] = selectedEmployeeIdx;
-                                                    }
-                                                    employees[selectedEmployeeIdx].numShifts++;
-                                                    employees[selectedShiftInfo.employeeIdx].numShifts--;
-                                                }
-                                            });
-                                            week2.forEach((day) => {
-                                                if (day.date === selectedShiftInfo.date?.toLocaleDateString()) {
-                                                    if (selectedShiftInfo.shiftType === 'AM') {
-                                                        day.AMshift[0] = selectedEmployeeIdx;
-                                                    } else {
-                                                        day.PMshift[0] = selectedEmployeeIdx;
-                                                    }
-                                                    employees[selectedEmployeeIdx].numShifts++;
-                                                    employees[selectedShiftInfo.employeeIdx].numShifts--;
-                                                }
-                                            });
+                                            
                                             if (selectedShiftInfo.week === 1) {
                                                 setWeek1(prevWeek1 => {
                                                     const updated = [...prevWeek1];
@@ -403,6 +382,8 @@ const mainpage = () => {
                                                     } else {
                                                         updated[selectedShiftInfo.dayIdx].PMshift[0] = selectedEmployeeIdx;
                                                     }
+                                                    employees[selectedEmployeeIdx].numShifts++;
+                                                    employees[selectedShiftInfo.employeeIdx].numShifts--;
                                                     return updated;
                                                 });
                                             } else if (selectedShiftInfo.week === 2) {
@@ -413,6 +394,8 @@ const mainpage = () => {
                                                     } else {
                                                         updated[selectedShiftInfo.dayIdx].PMshift[0] = selectedEmployeeIdx;
                                                     }
+                                                    employees[selectedEmployeeIdx].numShifts++;
+                                                    employees[selectedShiftInfo.employeeIdx].numShifts--;
                                                     return updated;
                                                 });
                                             }
@@ -449,15 +432,18 @@ const mainpage = () => {
             <Text style={styles.title}>Your Schedule:</Text>
             
             {/*actual schedule goes here*/}
-            <View style={{ width: '90%', alignItems: 'center', padding: 4, backgroundColor: '#222', borderRadius: 8 }}>
+            <View style={{ width: '90%', alignItems: 'center' }}>
                 <Text style={{fontSize: 18, color: 'white'}}>Hold on an employee name to swap</Text>
             </View>
+            
+
             <View style={styles.scheduleContainer}>
-                <View style= {{flexDirection: 'row', justifyContent: 'space-around', width: '100%'}}>
-                    <Text style={{color: 'white', fontWeight: 'bold', fontSize: 26}}>Week 1</Text>
-                    <Text style={{color: 'white', fontWeight: 'bold', fontSize: 26}}>Week 2</Text>
-                </View>
                 
+                <View style={[styles.optionsContainer, {width: '100%', marginBottom: 8, borderRadius: 0, marginHorizontal: 0}]}>
+                    <Text style={{ color: 'white', fontSize: 18, textAlign: 'center', paddingVertical: 4 }}>
+                        Up to date {new Date().toLocaleDateString()} - {new Date().toLocaleTimeString()}
+                    </Text>
+                </View>
                 {/* week 1 */}
                 
                 <View style={styles.weekContainer}>   
@@ -541,18 +527,7 @@ const mainpage = () => {
                     })}
                 </View>
             </View>
-            {/* Timestamp */}
-            <View style={{
-                backgroundColor: '#333',
-                width: '90%',
-                alignItems: 'center',
-                justifyContent: 'center',
-                paddingVertical: 8,
-            }}>
-                <Text style={{ color: 'white', fontSize: 18, textAlign: 'center' }}>
-                    Up to date {lastUpdated.toLocaleDateString()} - {lastUpdated.toLocaleTimeString()}
-                </Text>
-            </View>
+            
             {/* Shuffle shifts */}
             <Pressable style={[styles.button, { width: '90%', marginTop: 0, borderRadius: 0 }]} onPress={() => {resetShifts();}}>
                 <Text style={styles.buttonText}>Shuffle Shifts</Text>

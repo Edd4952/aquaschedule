@@ -152,14 +152,14 @@ const SavedPage = () => {
                     </View>
                 ))}
             </View>
-            <View style={styles.separator} />
-            <Text style={styles.title}>Schedule Viewer</Text>
-            <View style={styles.separator} />
+            
             {selectedSchedule ? (
                 <View style={[styles.scheduleContainer, { marginBottom: 10 }]}>
-                    <View style={{flexDirection: 'row', justifyContent: 'space-around', width: '100%'}}>
-                        <Text style={{color: 'white', fontWeight: 'bold', fontSize: 26}}>Week 1</Text>
-                        <Text style={{color: 'white', fontWeight: 'bold', fontSize: 26}}>Week 2</Text>
+                    {/* Timestamp only when a schedule is open */}
+                    <View style={[styles.optionsContainer, {width: '100%', marginBottom: 8, borderRadius: 0}]}>
+                        <Text style={{ color: 'white', fontSize: 18, textAlign: 'center', paddingVertical: 4 }}>
+                            Up to date {new Date().toLocaleDateString()} - {new Date().toLocaleTimeString()}
+                        </Text>
                     </View>
                     {/* week 1 */}
                     <View style={styles.weekContainer}>
@@ -388,16 +388,10 @@ const SavedPage = () => {
                             </View>
                         </View>
                     </Modal>
-                    {/* Timestamp only when a schedule is open */}
-                    <View style={[styles.optionsContainer, {width: '100%', marginTop: 8, borderRadius: 0, marginHorizontal: 0}]}>
-                        <Text style={{ color: 'white', fontSize: 18, textAlign: 'center', paddingVertical: 4 }}>
-                            Up to date {new Date().toLocaleDateString()} - {new Date().toLocaleTimeString()}
-                        </Text>
-                    </View>
                 </View>
             ) : (
                 <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', width: '90%' }}>
-                    <Text style={styles.title}>Select a schedule to view.</Text>
+                    <Text style={styles.title}>Select a schedule to view</Text>
                 </View>
             )}
             
@@ -423,7 +417,6 @@ const styles = StyleSheet.create({
         borderRadius: 8,
         paddingHorizontal: 8,
         paddingVertical: 4,
-        marginTop: 16,
         width: '90%',
         gap: 8,
     },
@@ -464,7 +457,7 @@ const styles = StyleSheet.create({
     title: {
         fontSize: 28,
         fontWeight: 'bold',
-        marginTop: 16,
+        marginTop: 8,
         color: 'white', // White text
     },
     link: {
