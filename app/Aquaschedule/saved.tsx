@@ -166,7 +166,7 @@ const SavedPage = () => {
                         {selectedSchedule.week1.map((item, idx) => {
                             // Use fullDate to get the day of the week
                             const dateObj = new Date(item.date);
-                            const dayOfWeek = !isNaN(dateObj.getTime()) ? daysOfWeek[dateObj.getDay()] : '';
+                            const dayOfWeek = !isNaN(dateObj.getTime()) ? daysOfWeek[(dateObj.getDay() + 1) % 7] : '';
                             
                             return (
                                 <View key={idx} style={styles.dayContainer}>
@@ -387,8 +387,14 @@ const SavedPage = () => {
                                 </View>
                             </View>
                         </View>
-                    </Modal>
+                    </Modal> 
+                    <View style={[styles.optionsContainer, {width: '100%', marginTop: 8, borderRadius: 0}]}>
+                        <Text style={{ color: 'white', fontSize: 18, textAlign: 'center', paddingVertical: 4 }}>
+                            Hold on an employee name to swap
+                        </Text>
+                    </View>
                 </View>
+               
             ) : (
                 <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', width: '90%' }}>
                     <Text style={styles.title}>Select a schedule to view</Text>

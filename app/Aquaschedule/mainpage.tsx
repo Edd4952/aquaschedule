@@ -300,7 +300,9 @@ const mainpage = () => {
                             let dayIdx: number | undefined = undefined;
                             if (selectedDate && pickerEmployeeIdx !== null) {
                                 // Only allow days ON or AFTER the starting date
-                                if (selectedDate < date) {
+                                const dayBefore = new Date(date);
+                                dayBefore.setDate(dayBefore.getDate() - 1);
+                                if (selectedDate < dayBefore) {
                                     alert("You cannot add a day off before the starting day of the schedule.");
                                     setPickerEmployeeIdx(null);
                                     return;
@@ -439,7 +441,7 @@ const mainpage = () => {
 
             <View style={styles.scheduleContainer}>
                 
-                <View style={[styles.optionsContainer, {width: '100%', marginBottom: 8, borderRadius: 0, marginHorizontal: 0}]}>
+                <View style={[styles.optionsContainer, {width: '100%', marginBottom: 8, borderRadius: 0}]}>
                     <Text style={{ color: 'white', fontSize: 18, textAlign: 'center', paddingVertical: 4 }}>
                         Up to date {new Date().toLocaleDateString()} - {new Date().toLocaleTimeString()}
                     </Text>
