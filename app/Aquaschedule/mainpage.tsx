@@ -87,6 +87,7 @@ const mainpage = () => {
         const newId = employees.length > 0 ? Math.max(...employees.map(e => e.id)) + 1 : 0;
         setEmployees([...employees, { id: newId, name: `New`, numShifts: 0, daysCantWork: [] }]);
         setEditingNames([...editingNames, "New"]);
+        setEditingDaysCantWork([...editingDaysCantWork, ""]);
     }
     function findNewEmplFromList(int: number, list = employees, day: number): number {
         // create new array without the employee with the given id
@@ -168,7 +169,6 @@ const mainpage = () => {
         setWeek2(newWeek2);
     }, [employees, date]);
     
-
     const onChange = (event: any, selectedDate?: Date | undefined) => {
         setShow(true);
         if (selectedDate){
@@ -227,9 +227,36 @@ const mainpage = () => {
                                 <Pressable
                                     style={{ backgroundColor: '#c00', borderRadius: 4, padding: 4 }}
                                     onPress={() => {
-                                        setEmployees(emps => emps.filter((_, i) => i !== idx));
+                                        const removedId = employees[idx]?.id ?? idx;
+
+                                        // Keep week assignments consistent with new IDs
+                                        const reindex = (d: Day) => ({
+                                            ...d,
+                                            AMshift: [
+                                                d.AMshift[0] === removedId
+                                                    ? -1
+                                                    : d.AMshift[0] > removedId
+                                                        ? d.AMshift[0] - 1
+                                                        : d.AMshift[0]
+                                            ],
+                                            PMshift: [
+                                                d.PMshift[0] === removedId
+                                                    ? -1
+                                                    : d.PMshift[0] > removedId
+                                                        ? d.PMshift[0] - 1
+                                                        : d.PMshift[0]
+                                            ],
+                                        });
+                                        setWeek1(prev => prev.map(reindex));
+                                        setWeek2(prev => prev.map(reindex));
+
+                                        // Remove employee and reassign IDs
+                                        setEmployees(emps => {
+                                            const filtered = emps.filter((_, i) => i !== idx);
+                                            return filtered.map((e, i) => ({ ...e, id: i }));
+                                        });
                                         setEditingNames(names => names.filter((_, i) => i !== idx));
-                                        setEmployees(emps => emps.map((e, i) => ({ ...e, id: i })));
+                                        setEditingDaysCantWork(days => days.filter((_, i) => i !== idx));
                                     }}
                                 >
                                     <Text style={{ color: 'white', fontSize: 14, fontWeight: 'bold' }}>Remove</Text>
@@ -431,6 +458,7 @@ const mainpage = () => {
                     />
                 )}
             </View>
+            
             <Text style={styles.title}>Your Schedule:</Text>
             
             {/*actual schedule goes here*/}
@@ -438,7 +466,6 @@ const mainpage = () => {
                 <Text style={{fontSize: 18, color: 'white'}}>Hold on an employee name to swap</Text>
             </View>
             
-
             <View style={styles.scheduleContainer}>
                 
                 <View style={[styles.optionsContainer, {width: '100%', marginBottom: 8, borderRadius: 0}]}>
@@ -467,7 +494,7 @@ const mainpage = () => {
                                         </Text>
                                         <Pressable onLongPress={() => handleLongPress(item.AMshift[0], 1, idx, 'AM', new Date(date.getFullYear(), date.getMonth(), date.getDate() + idx))}>
                                             <Text style={{color: 'white', fontSize: 18, fontWeight: 'bold', backgroundColor: '#444', borderRadius: 4}}>
-                                                {" "}{item.AMshift[0] !== -1 ? employees[item.AMshift[0]].name : 'No one'}{" "}
+                                                {" "}{item.AMshift[0] !== -1 && employees[item.AMshift[0]] ? employees[item.AMshift[0]].name : 'No one'}{" "}
                                             </Text>
                                         </Pressable>
                                     </View>
@@ -478,7 +505,7 @@ const mainpage = () => {
                                         </Text>
                                         <Pressable onLongPress={() => handleLongPress(item.PMshift[0], 1, idx, 'PM', new Date(date.getFullYear(), date.getMonth(), date.getDate() + idx))}>
                                             <Text style={{color: 'white', fontSize: 18, fontWeight: 'bold', backgroundColor: '#222', borderRadius: 4}}>
-                                                {" "}{item.PMshift[0] !== -1 ? employees[item.PMshift[0]].name : 'No one'}{" "}
+                                                {" "}{item.PMshift[0] !== -1 && employees[item.PMshift[0]] ? employees[item.PMshift[0]].name : 'No one'}{" "}
                                             </Text>
                                         </Pressable>
                                     </View>
@@ -508,7 +535,7 @@ const mainpage = () => {
                                         </Text>
                                         <Pressable onLongPress={() => handleLongPress(item.AMshift[0], 2, idx, 'AM', new Date(date.getFullYear(), date.getMonth(), date.getDate() + idx + 7))}>
                                             <Text style={{color: 'white', fontSize: 18, fontWeight: 'bold', backgroundColor: '#444', borderRadius: 4}}>
-                                                {" "}{item.AMshift[0] !== -1 ? employees[item.AMshift[0]].name : 'No one'}{" "}
+                                                {" "}{item.AMshift[0] !== -1 && employees[item.AMshift[0]] ? employees[item.AMshift[0]].name : 'No one'}{" "}
                                             </Text>
                                         </Pressable>
                                     </View>
@@ -519,7 +546,7 @@ const mainpage = () => {
                                         </Text>
                                         <Pressable onLongPress={() => handleLongPress(item.PMshift[0], 2, idx, 'PM', new Date(date.getFullYear(), date.getMonth(), date.getDate() + idx + 7))}>
                                             <Text style={{color: 'white', fontSize: 18, fontWeight: 'bold', backgroundColor: '#222', borderRadius: 4}}>
-                                                {" "}{item.PMshift[0] !== -1 ? employees[item.PMshift[0]].name : 'No one'}{" "}
+                                                {" "}{item.PMshift[0] !== -1 && employees[item.PMshift[0]] ? employees[item.PMshift[0]].name : 'No one'}{" "}
                                             </Text>
                                         </Pressable>
                                     </View>
