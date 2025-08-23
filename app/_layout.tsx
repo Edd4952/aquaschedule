@@ -1,22 +1,40 @@
-import { Stack } from "expo-router";
-import HomePage from ".";
-import { HeaderTitle } from "@react-navigation/elements";
-import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native';
-import { useColorScheme } from '../hooks/useColorScheme';
+import { DarkTheme, DefaultTheme, ThemeProvider as NavThemeProvider } from '@react-navigation/native';
 import { useFonts } from 'expo-font';
+import { Stack } from "expo-router";
+import { Switch } from 'react-native';
+import { ThemeProvider, colorsFor, useThemeMode } from './theme';
 
+function RootStackInner() {
+  const { mode, toggle } = useThemeMode();
+  const c = colorsFor(mode);
+  const navTheme = mode === 'dark' ? DarkTheme : DefaultTheme;
 
+  return (
+    <NavThemeProvider value={navTheme}>
+      <Stack
+        screenOptions={{
+          headerStyle: { backgroundColor: c.headerBg },
+          headerTintColor: c.tint,
+          contentStyle: { backgroundColor: c.bg },
+          headerRight: () => (
+            <Switch style={{ marginRight: 8 }} value={mode === 'dark'} onValueChange={toggle} />
+          ),
+        }}
+      >
+        <Stack.Screen name="index" options={{ headerTitle: "AquaSchedule" }} />
+      </Stack>
+    </NavThemeProvider>
+  );
+}
 
 const RootLayout = () => {
-  const colorScheme = useColorScheme();
   const [loaded] = useFonts({
     SpaceMono: require('../assets/fonts/SpaceMono-Regular.ttf'),
   });
+  // Optionally handle font loading state if needed
   return (
-    <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
-      <Stack>
-        <Stack.Screen name="index" options={{headerTitle: "AquaSchedule"}} />
-      </Stack>
+    <ThemeProvider>
+      <RootStackInner />
     </ThemeProvider>
   );
 };

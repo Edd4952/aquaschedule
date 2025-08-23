@@ -4,6 +4,7 @@ import { Picker } from '@react-native-picker/picker';
 import { useFocusEffect } from '@react-navigation/native';
 import React, { useState } from 'react';
 import { Modal, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { colorsFor, useThemeMode } from '../theme'; // <-- add
 
 type Employee = {
     id: number;
@@ -53,6 +54,10 @@ const schedule: Schedule = {
 };
 //
 const SavedPage = () => {
+    const { mode } = useThemeMode();              // <-- add
+    const styles = themedStyles(mode);            // <-- add
+    const c = colorsFor(mode);                    // <-- add
+
     const [schedules, setSchedules] = useState<Schedule[]>([]);
     const [selectedIdx, setSelectedIdx] = useState<number | null>(null);
 
@@ -105,8 +110,8 @@ const SavedPage = () => {
 
     if (schedules.length === 0) {
         return (
-            <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#222' }}>
-                <Text style={{ color: 'white', fontSize: 22, textAlign: 'center', width: '80%' }}>
+            <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: c.bg }}>
+                <Text style={{ color: c.text, fontSize: 22, textAlign: 'center', width: '80%' }}>
                     No saved schedules yet. Create a schedule first, and save it.
                 </Text>
             </View>
@@ -155,32 +160,31 @@ const SavedPage = () => {
             
             {selectedSchedule ? (
                 <View style={[styles.scheduleContainer, { marginBottom: 10 }]}>
-                    {/* Timestamp only when a schedule is open */}
+
                     <View style={[styles.optionsContainer, {width: '100%', marginBottom: 8, borderRadius: 0}]}>
-                        <Text style={{ color: 'white', fontSize: 18, textAlign: 'center', paddingVertical: 4 }}>
+                        <Text style={{ color: c.text, fontSize: 18, textAlign: 'center', paddingVertical: 4 }}>
                             Up to date {new Date().toLocaleDateString()} - {new Date().toLocaleTimeString()}
                         </Text>
                     </View>
+
                     {/* week 1 */}
                     <View style={styles.weekContainer}>
                         {selectedSchedule.week1.map((item, idx) => {
-                            // Use fullDate to get the day of the week
                             const dateObj = new Date(item.date);
                             const dayOfWeek = !isNaN(dateObj.getTime()) ? daysOfWeek[(dateObj.getDay() + 1) % 7] : '';
                             
                             return (
                                 <View key={idx} style={styles.dayContainer}>
-                                    <Text style={{color: 'white', fontSize: 18, lineHeight: 26}}>
+                                    <Text style={{color: c.text, fontSize: 18, lineHeight: 26}}>
                                         {item.shortDate}{'\n'}{dayOfWeek}
                                     </Text>
                                     
                                     <View style={styles.cells}>
-
                                         <View style={styles.cell}>
-                                            <Text style={{color: 'white', fontSize: 18, fontWeight: 'bold'}}>AM:</Text>
+                                            <Text style={{color: c.text, fontSize: 18, fontWeight: 'bold'}}>AM:</Text>
                                             <Pressable onLongPress={() => handleLongPress(item.AMshift[0], 1, idx, 'AM', new Date(item.date))}>
-                                                <Text style={{color: 'white', fontSize: 18, fontWeight: 'bold', backgroundColor: '#444', borderRadius: 4}}>
-                                                    {" "}{item.AMshift[0] !== -1 ? selectedSchedule.employees[item.AMshift[0]].name : 'No one'}{" "}
+                                                <Text style={{color: c.text, fontSize: 18, fontWeight: 'bold', backgroundColor: c.card2, borderRadius: 4}}>
+                                                    {" "}{item.AMshift[0] !== -1 && selectedSchedule.employees[item.AMshift[0]] ? selectedSchedule.employees[item.AMshift[0]].name : 'No one'}{" "}
                                                 </Text>
                                             </Pressable>
                                         </View>
@@ -188,10 +192,10 @@ const SavedPage = () => {
                                         <View style={styles.separator} />
                                         
                                         <View style={styles.cell}>
-                                            <Text style={{color: 'white', fontSize: 18, fontWeight: 'bold'}}>PM:</Text>
+                                            <Text style={{color: c.text, fontSize: 18, fontWeight: 'bold'}}>PM:</Text>
                                             <Pressable onLongPress={() => handleLongPress(item.PMshift[0], 1, idx, 'PM', new Date(item.date))}>
-                                                <Text style={{color: 'white', fontSize: 18, fontWeight: 'bold', backgroundColor: '#222', borderRadius: 4}}>
-                                                    {" "}{item.PMshift[0] !== -1 ? selectedSchedule.employees[item.PMshift[0]].name : 'No one'}{" "}
+                                                <Text style={{color: c.text, fontSize: 18, fontWeight: 'bold', backgroundColor: c.card3, borderRadius: 4}}>
+                                                    {" "}{item.PMshift[0] !== -1 && selectedSchedule.employees[item.PMshift[0]] ? selectedSchedule.employees[item.PMshift[0]].name : 'No one'}{" "}
                                                 </Text>
                                             </Pressable>
                                         </View>
@@ -201,6 +205,7 @@ const SavedPage = () => {
                             );
                         })}
                     </View>
+
                     {/* week 2 */}
                     <View style={styles.weekContainer}>
                         {selectedSchedule.week2.map((item, idx) => {
@@ -209,25 +214,25 @@ const SavedPage = () => {
                             
                             return (
                                 <View key={idx} style={styles.dayContainer}>
-                                    <Text style={{color: 'white', fontSize: 18, lineHeight: 26}}>
+                                    <Text style={{color: c.text, fontSize: 18, lineHeight: 26}}>
                                         {item.shortDate}{'\n'}{dayOfWeek}
                                     </Text>
                                     
                                     <View style={styles.cells}>
                                         <View style={styles.cell}>
-                                            <Text style={{color: 'white', fontSize: 18, fontWeight: 'bold'}}>AM:</Text>
+                                            <Text style={{color: c.text, fontSize: 18, fontWeight: 'bold'}}>AM:</Text>
                                             <Pressable onLongPress={() => handleLongPress(item.AMshift[0], 2, idx, 'AM', new Date(item.date))}>
-                                                <Text style={{color: 'white', fontSize: 18, fontWeight: 'bold', backgroundColor: '#444', borderRadius: 4}}>
-                                                    {" "}{item.AMshift[0] !== -1 ? selectedSchedule.employees[item.AMshift[0]].name : 'No one'}{" "}
+                                                <Text style={{color: c.text, fontSize: 18, fontWeight: 'bold', backgroundColor: c.card2, borderRadius: 4}}>
+                                                    {" "}{item.AMshift[0] !== -1 && selectedSchedule.employees[item.AMshift[0]] ? selectedSchedule.employees[item.AMshift[0]].name : 'No one'}{" "}
                                                 </Text>
                                             </Pressable>
                                         </View>
                                         <View style={styles.separator} />
                                         <View style={styles.cell}>
-                                            <Text style={{color: 'white', fontSize: 18, fontWeight: 'bold'}}>PM:</Text>
+                                            <Text style={{color: c.text, fontSize: 18, fontWeight: 'bold'}}>PM:</Text>
                                             <Pressable onLongPress={() => handleLongPress(item.PMshift[0], 2, idx, 'PM', new Date(item.date))}>
-                                                <Text style={{color: 'white', fontSize: 18, fontWeight: 'bold', backgroundColor: '#222', borderRadius: 4}}>
-                                                    {" "}{item.PMshift[0] !== -1 ? selectedSchedule.employees[item.PMshift[0]].name : 'No one'}{" "}
+                                                <Text style={{color: c.text, fontSize: 18, fontWeight: 'bold', backgroundColor: c.card3, borderRadius: 4}}>
+                                                    {" "}{item.PMshift[0] !== -1 && selectedSchedule.employees[item.PMshift[0]] ? selectedSchedule.employees[item.PMshift[0]].name : 'No one'}{" "}
                                                 </Text>
                                             </Pressable>
                                         </View>
@@ -236,9 +241,9 @@ const SavedPage = () => {
                             );
                         })}
                     </View>
+
                     {/* Swap Modal */}
                     {modalVisible && selectedShiftInfo && (
-                        
                         <Modal
                             visible={modalVisible}
                             transparent
@@ -252,13 +257,13 @@ const SavedPage = () => {
                                 alignItems: 'center'
                             }}>
                                 <View style={{
-                                    backgroundColor: '#333',
+                                    backgroundColor: c.card,
                                     padding: 18,
                                     borderRadius: 12,
                                     alignItems: 'center'
                                 }}>
-                                    <Text style={{color: 'white', fontSize: 20, marginBottom: 16, fontWeight: 'bold'}}>Shift Options</Text>
-                                    <Text style={{color: 'white', fontSize: 18, marginBottom: 8, lineHeight: 24}}>
+                                    <Text style={{color: c.text, fontSize: 20, marginBottom: 16, fontWeight: 'bold'}}>Shift Options</Text>
+                                    <Text style={{color: c.text, fontSize: 18, marginBottom: 8, lineHeight: 24}}>
                                         {selectedShiftInfo.employeeIdx !== -1
                                             ? `Employee: ${selectedSchedule.employees[selectedShiftInfo.employeeIdx].name}\n`
                                             : 'No employee assigned to this shift.\n'}
@@ -269,7 +274,7 @@ const SavedPage = () => {
                                     </Text>
                                     <Picker
                                         selectedValue={selectedEmployeeIdx}
-                                        style={{ height: 50, width: 200, color: 'white', backgroundColor: '#444' }}
+                                        style={{ height: 50, width: 200, color: c.text, backgroundColor: c.card2 }}
                                         onValueChange={(itemValue, itemIndex) => setSelectedEmployeeIdx(itemValue)}
                                     >
                                         {selectedSchedule.employees.map(emp => (
@@ -317,12 +322,13 @@ const SavedPage = () => {
                                         <Text style={{color: '#fff', fontSize: 18}}>Swap Employee</Text>
                                     </Pressable>
                                     <Pressable style={{borderColor: '#888', borderWidth: 1, borderRadius: 8, padding: 8, marginTop: 8}} onPress={() => setModalVisible(false)}>
-                                        <Text style={{color: '#fff', fontSize: 18}}>Cancel</Text>
+                                        <Text style={{color: c.text, fontSize: 18}}>Cancel</Text>
                                     </Pressable>
                                 </View>
                             </View>
                         </Modal>
                     )}
+
                     {/* Delete confirmation modal */}
                     <Modal
                         visible={deleteModalVisible}
@@ -337,16 +343,16 @@ const SavedPage = () => {
                             alignItems: 'center',
                         }}>
                             <View style={{
-                                backgroundColor: '#333',
+                                backgroundColor: c.card,
                                 padding: 24,
                                 margin: 16,
                                 borderRadius: 12,
                                 alignItems: 'center'
                             }}>
-                                <Text style={{ color: 'white', fontSize: 20, fontWeight: 'bold', marginBottom: 16 }}>
+                                <Text style={{ color: c.text, fontSize: 20, fontWeight: 'bold', marginBottom: 16 }}>
                                     Delete this schedule?
                                 </Text>
-                                <Text style={{ color: 'white', fontSize: 16, marginBottom: 24 }}>
+                                <Text style={{ color: c.text, fontSize: 16, marginBottom: 24 }}>
                                     Are you sure you want to delete this saved schedule? This action cannot be undone.
                                 </Text>
                                 <View style={{ flexDirection: 'row', gap: 16 }}>
@@ -373,7 +379,7 @@ const SavedPage = () => {
                                     </Pressable>
                                     <Pressable
                                         style={{
-                                            backgroundColor: '#555',
+                                            backgroundColor: mode === 'dark' ? '#555' : '#ddd',
                                             borderRadius: 8,
                                             padding: 12,
                                         }}
@@ -382,14 +388,15 @@ const SavedPage = () => {
                                             setScheduleToDeleteIdx(null);
                                         }}
                                     >
-                                        <Text style={{ color: '#fff', fontWeight: 'bold', fontSize: 16 }}>Cancel</Text>
+                                        <Text style={{ color: c.text, fontWeight: 'bold', fontSize: 16 }}>Cancel</Text>
                                     </Pressable>
                                 </View>
                             </View>
                         </View>
                     </Modal> 
+
                     <View style={[styles.optionsContainer, {width: '100%', marginTop: 8, borderRadius: 0}]}>
-                        <Text style={{ color: 'white', fontSize: 18, textAlign: 'center', paddingVertical: 4 }}>
+                        <Text style={{ color: c.text, fontSize: 18, textAlign: 'center', paddingVertical: 4 }}>
                             Hold on an employee name to swap
                         </Text>
                     </View>
@@ -405,94 +412,98 @@ const SavedPage = () => {
     );
 };
 
-const styles = StyleSheet.create({
-    container: {
-        display: 'flex',
-        flexDirection: 'column',
-        justifyContent: 'flex-start',
-        backgroundColor: '#222',
-        alignItems: 'center',
-        gap: 8,
-        minHeight: '100%', // Add this line
-    },
-    optionsContainer:{
-        display: 'flex',
-        flexDirection: 'column',
-        justifyContent: 'center',
-        backgroundColor: '#333',
-        borderRadius: 8,
-        paddingHorizontal: 8,
-        paddingVertical: 4,
-        width: '90%',
-        gap: 8,
-    },
-    scheduleContainer: {
-        display: 'flex',
-        flexDirection: 'row',
-        flexWrap: 'wrap',
-        justifyContent: 'space-between',
-        width: '90%',
-    },
-    weekContainer: {
-        display: 'flex',
-        flexDirection: 'column',
-        width: '49%',
-        gap: 8,
-    },
-    dayContainer: {
-        display: 'flex',
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        width: '100%',
-        padding: 4,
-        backgroundColor: '#333',
-        alignContent: 'stretch',
-    },
-    cells: {
-        display: 'flex',
-        width: '75%',
-        paddingLeft: 8,
-        flexDirection: 'column',
-        alignSelf: 'stretch',
-    },
-    cell: {
-        display: 'flex',
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-    },
-    title: {
-        fontSize: 28,
-        fontWeight: 'bold',
-        marginTop: 8,
-        color: 'white', // White text
-    },
-    link: {
-        color: '#007AFF',
-        fontSize: 18,
-    },
-    button: {
-        backgroundColor: '#008AFF',
-        paddingVertical: 3,
-        paddingHorizontal: 0,
-        marginVertical: 4,
-        borderRadius: 8,
-    },
-    buttonText: {
-        color: '#fff',
-        fontSize: 18,
-        textAlign: 'center',
-        fontWeight: 'bold',
-        padding: 8,
-    },
-    separator: {
-        height: 1,
-        backgroundColor: '#555',
-        marginVertical: 1,
-    },
-    selectedSchedule: {
-        backgroundColor: '#0055ff', // or any highlight color you prefer
-        borderWidth: 2,
-    },
-});
+// Replace the static styles with themed styles (like mainpage)
+const themedStyles = (mode: 'light' | 'dark') => {
+    const c = colorsFor(mode);
+    return StyleSheet.create({
+        container: {
+            display: 'flex',
+            flexDirection: 'column',
+            justifyContent: 'flex-start',
+            backgroundColor: c.bg,
+            alignItems: 'center',
+            gap: 8,
+            minHeight: '100%',
+        },
+        optionsContainer:{
+            display: 'flex',
+            flexDirection: 'column',
+            justifyContent: 'center',
+            backgroundColor: c.card,
+            borderRadius: 8,
+            paddingHorizontal: 8,
+            paddingVertical: 4,
+            width: '90%',
+            gap: 8,
+        },
+        scheduleContainer: {
+            display: 'flex',
+            flexDirection: 'row',
+            flexWrap: 'wrap',
+            justifyContent: 'space-between',
+            width: '90%',
+        },
+        weekContainer: {
+            display: 'flex',
+            flexDirection: 'column',
+            width: '49%',
+            gap: 8,
+        },
+        dayContainer: {
+            display: 'flex',
+            flexDirection: 'row',
+            justifyContent: 'space-between',
+            width: '100%',
+            padding: 4,
+            backgroundColor: c.card,
+            alignContent: 'stretch',
+        },
+        cells: {
+            display: 'flex',
+            width: '75%',
+            paddingLeft: 8,
+            flexDirection: 'column',
+            alignSelf: 'stretch',
+        },
+        cell: {
+            display: 'flex',
+            flexDirection: 'row',
+            justifyContent: 'space-between',
+        },
+        title: {
+            fontSize: 28,
+            fontWeight: 'bold',
+            marginTop: 8,
+            color: c.text,
+        },
+        link: {
+            color: '#007AFF',
+            fontSize: 18,
+        },
+        button: {
+            backgroundColor: '#008AFF',
+            paddingVertical: 3,
+            paddingHorizontal: 0,
+            marginVertical: 4,
+            borderRadius: 8,
+        },
+        buttonText: {
+            color: '#fff',
+            fontSize: 18,
+            textAlign: 'center',
+            fontWeight: 'bold',
+            padding: 8,
+        },
+        separator: {
+            height: 1,
+            backgroundColor: mode === 'dark' ? '#666' : '#ddd',
+            marginVertical: 1,
+        },
+        selectedSchedule: {
+            backgroundColor: '#0055ff',
+            borderWidth: 2,
+        },
+    });
+};
 
 export default SavedPage;
