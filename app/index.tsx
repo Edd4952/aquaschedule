@@ -8,16 +8,19 @@ const HomePage = () => {
 
   return (
     <View style={[styles.container, { backgroundColor: c.bg }]}>
-      <Text style={[styles.text, { color: c.text }]}>Welcome to my app</Text>
-      <Link style={[styles.button]} href={{ pathname: "/AquaSchedule/mainpage", params: { id: "1" } }}>
+      <Text style={[styles.text, { color: c.text, fontWeight: 'bold', fontSize: 32 }]}>CCounter</Text>
+      
+      <View style={styles.actions}>
+        <Link style={[styles.button]} href={{ pathname: "/CCounter/mainpage", params: { id: "1" } }}>
           <Text style={[styles.text, { color: c.text }]}>Make a schedule</Text>
-      </Link>
-      <Pressable style={[styles.button2]} onPress={() => router.push({ pathname: "/AquaSchedule/saved" })}>
-        <Text style={[styles.text, { color: c.text }]}>Saved Schedules</Text>
-      </Pressable>
-      <Pressable style={[styles.button2]} onPress={() => router.push({ pathname: "/AquaSchedule/about" })}>
-        <Text style={[styles.text, { color: c.text }]}>About Page</Text>
-      </Pressable>
+        </Link>
+        <Pressable style={[styles.button2]} onPress={() => router.push({ pathname: "/CCounter/saved" })}>
+          <Text style={[styles.text, { color: c.text }]}>Saved Schedules</Text>
+        </Pressable>
+        <Pressable style={[styles.button2]} onPress={() => router.push({ pathname: "/CCounter/about" })}>
+          <Text style={[styles.text, { color: c.text }]}>About Page</Text>
+        </Pressable>
+      </View>
     </View>
   );
 }
@@ -25,7 +28,7 @@ const HomePage = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    justifyContent: 'center',
+    justifyContent: 'space-evenly',
     alignItems: 'center',
     backgroundColor: '#222',
     gap: 8,
@@ -51,6 +54,10 @@ const styles = StyleSheet.create({
     paddingVertical: 4,
     paddingHorizontal: 8,
     borderRadius: 8,
+  },
+  actions: {
+    alignItems: 'center',
+    gap: 8,
   }
 });
 

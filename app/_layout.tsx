@@ -21,7 +21,7 @@ function RootStackInner() {
           ),
         }}
       >
-        <Stack.Screen name="index" options={{ headerTitle: "AquaSchedule" }} />
+        <Stack.Screen name="index" options={{ headerShown: false }} />
       </Stack>
     </NavThemeProvider>
   );
