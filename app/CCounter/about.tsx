@@ -13,21 +13,7 @@ const About = () => {
             <View style={styles.topic}>
                 <Text style={styles.title}>About Page</Text>
                 <Text style={styles.text2}>
-                    Hi, I'm Edward.{'\n'}
-                    I created this program for my part time job at Aquaguard.
-                    My hope is to provide a tool that will save the time and hassle of
-                    many Aquaguard managers.
-                    This project was made in React Native + Expo.
-                    It is a work in progress; you may find bugs.
-                </Text>
-            </View>
-            <View style={styles.topic}>
-                <Text style={styles.title}>Found a bug?</Text>
-                <Text style={[styles.title, {marginTop: 0}]}>Recommendations?</Text>
-                <Text style={[styles.title, {marginTop: 0}]}>Questions?</Text>
-                <Text style={styles.text2}>
-                    Reach out to our skilled team of professionals!{'\n\n'}
-                    Email: zilbert3dward@gmail.com
+                    
                 </Text>
             </View>
         </View>

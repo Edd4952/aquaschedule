@@ -12,10 +12,10 @@ const HomePage = () => {
       
       <View style={styles.actions}>
         <Link style={[styles.button]} href={{ pathname: "/CCounter/mainpage", params: { id: "1" } }}>
-          <Text style={[styles.text, { color: c.text }]}>Make a schedule</Text>
+          <Text style={[styles.text, { color: c.text }]}>Electric box sorter</Text>
         </Link>
         <Pressable style={[styles.button2]} onPress={() => router.push({ pathname: "/CCounter/saved" })}>
-          <Text style={[styles.text, { color: c.text }]}>Saved Schedules</Text>
+          <Text style={[styles.text, { color: c.text }]}>Saved Layouts</Text>
         </Pressable>
         <Pressable style={[styles.button2]} onPress={() => router.push({ pathname: "/CCounter/about" })}>
           <Text style={[styles.text, { color: c.text }]}>About Page</Text>

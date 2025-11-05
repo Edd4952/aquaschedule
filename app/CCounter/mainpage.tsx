@@ -1,721 +1,289 @@
-import { Ionicons } from '@expo/vector-icons'; // Add this at the top with your imports
-import AsyncStorage from '@react-native-async-storage/async-storage';
-import DateTimePicker from '@react-native-community/datetimepicker';
-import { Picker } from '@react-native-picker/picker';
 import React, { useEffect, useMemo, useState } from 'react';
-import { Modal, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { ScrollView, StyleSheet, Text, TextInput, View, Pressable } from 'react-native';
 import { colorsFor, useThemeMode } from '../theme';
 
-type Employee = {
-    id: number;
-    name: string;
-    numShifts: number;
-    daysCantWork: number[];
-};
+type block = {
+    wattage: number;
+    size: number;
+}
 
-type Day = {
-    day: number;
-    date: string;
-    shortDate: string;
-    AMshift: number[];
-    PMshift: number[];
-};
+type column = {
+    blocks: block[];
+}
 
-const employeeList: Employee[] = [
-    { id: 0, name: 'Karol', numShifts: 0, daysCantWork: [] }
-];
-
-const mainpage = () => {
-    // INITIALIZATION AND DATA
+const mainpage: React.FC = () => {
+    {/*INITIALIZATION*/}
     const { mode } = useThemeMode();
-    const styles = themedStyles(mode); // use themed styles
-    const c = colorsFor(mode); // <- add this so we can use theme inline
-    const [date, setDate] = useState(new Date());
-    const [show, setShow] = useState(false);
-    const [employees, setEmployees] = useState(employeeList);
-    const maxShifts = useMemo(() => {
-        return employees.length > 0 ? Math.ceil(28 / employees.length) : 0;
-    }, [employees]);
-    const [editingNames, setEditingNames] = useState(employees.map(emp => emp.name));
-    const [editingDaysCantWork, setEditingDaysCantWork] = useState(employees.map(emp => emp.daysCantWork.join(',')));
-    //longpress
-    const [modalVisible, setModalVisible] = useState(false);
-    const [pickerVisible, setPickerVisible] = useState(false);
-    const [pickerEmployeeIdx, setPickerEmployeeIdx] = useState<number | null>(null);
-    const [selectedEmployeeIdx, setSelectedEmployeeIdx] = useState<number | null>(null);
-    const [lastUpdated, setLastUpdated] = useState(new Date());
-    
-    // Update timestamp whenever employees, week1, week2, or date changes
-    React.useEffect(() => {
-        setLastUpdated(new Date());
-    }, [employees, date]);
+    const styles = useMemo(() => themedStyles(mode), [mode]);
 
-    const saveSchedule = async (scheduleData: any) => {
-        try {
-            const raw = await AsyncStorage.getItem('savedSchedules');
-            const schedules = raw ? JSON.parse(raw) : [];
-            const newSchedule = { ...scheduleData, savedAt: new Date().toISOString() };
-            await AsyncStorage.setItem('savedSchedules', JSON.stringify([...schedules, newSchedule]));
-            alert('Schedule saved!');
-            setLastUpdated(new Date());
-        } catch (e) {
-            alert('Failed to save schedule.');
-        }
-    };
-    
-    const [selectedShiftInfo, setSelectedShiftInfo] = useState<{
-        employeeIdx: number;
-        week: 1 | 2;
-        dayIdx: number;
-        shiftType: 'AM' | 'PM';
-        date: Date;
-    } | null>(null);
+    const [column1, setColumn1] = useState<column>({ blocks: [] });
+    const [column2, setColumn2] = useState<column>({ blocks: [] });
 
-    const handleLongPress = (
-        employeeIdx: number,
-        week: 1 | 2,
-        dayIdx: number,
-        shiftType: 'AM' | 'PM',
-        shiftDate: Date
-    ) => {
-        setSelectedShiftInfo({ employeeIdx, week, dayIdx, shiftType, date: shiftDate });
-        setModalVisible(true);
-    };
-    
-    function resetShifts() {
-        setEmployees(employees.map(emp => ({ ...emp, numShifts: 0 })));
-        setLastUpdated(new Date());
-    }
-    
-    function addEmployee() {
-        const newId = employees.length > 0 ? Math.max(...employees.map(e => e.id)) + 1 : 0;
-        setEmployees([...employees, { id: newId, name: `New`, numShifts: 0, daysCantWork: [] }]);
-        setEditingNames([...editingNames, ""]);
-        setEditingDaysCantWork([...editingDaysCantWork, ""]);
-    }
-    function findNewEmplFromList(int: number, list = employees, day: number): number {
-        // create new array without the employee with the given id
-        const filtered = list.filter(employeeList => employeeList.id !== int);
-        // filter out employees that have already worked the maximum number of shifts
-        const filterMax = filtered.filter(employeeList => employeeList.numShifts < maxShifts);
-        // filter out employees that can't work on the given day
-        const filterCantWork = filterMax.filter(employeeList => !employeeList.daysCantWork.includes(day));
-        return filterCantWork.length > 0 ? filterCantWork[Math.floor(Math.random() * filterCantWork.length)].id : -1;
-    }
-    
-    const daysOfWeek = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+    // Only-integer inputs
+    const [qty1, setQty1] = useState<string>('');
+    const [qty2, setQty2] = useState<string>('');
+    const [qty3, setQty3] = useState<string>('');
 
-    const [week1, setWeek1] = useState<Day[]>([]);
-    const [week2, setWeek2] = useState<Day[]>([]);
+    // Selections for height-1 blocks
+    const [h1Values, setH1Values] = useState<number[]>([]);
+    const WATTAGE_OPTIONS = useMemo(() => Array.from({ length: 31 }, (_, i) => i * 10), []);
+    const WATTAGE_LABELS = useMemo(() => WATTAGE_OPTIONS.map(String), [WATTAGE_OPTIONS]);
 
+    // NEW: selections for height-2 and height-3 blocks
+    const [h2Values, setH2Values] = useState<number[]>([]);
+    const [h3Values, setH3Values] = useState<number[]>([]);
+
+    // Keep selection array length in sync with qty1
     useEffect(() => {
-        // Generate week1 and week2 when employees or date changes
-        let localEmployees = employees.map(emp => ({ ...emp }));
-        const newWeek1 = Array.from({ length: 7 }, (_, i) => {
-
-            let AMshift = findNewEmplFromList(-1, localEmployees, i + 1);
-            if (AMshift !== -1) {
-                localEmployees[AMshift] = { ...localEmployees[AMshift], numShifts: localEmployees[AMshift].numShifts + 1 };
-            }
-            let PMshift = findNewEmplFromList(AMshift, localEmployees, i + 1);
-            if (PMshift !== -1) {
-                localEmployees[PMshift] = { ...localEmployees[PMshift], numShifts: localEmployees[PMshift].numShifts + 1 };
-            }
-
-            const day = i + 1;
-            const dayDate = new Date(date.getFullYear(), date.getMonth(), date.getDate() + i).toLocaleDateString();
-            const shortDate = String(new Date(date.getFullYear(), date.getMonth(), date.getDate() + i).getMonth() + 1) + '/' + String(new Date(date.getFullYear(), date.getMonth(), date.getDate() + i).getDate());
-            
-            if (AMshift !== -1) {
-                employees[AMshift].numShifts++;
-            }
-            if (PMshift !== -1) {
-                employees[PMshift].numShifts++;
-            }
-            return {
-                day,
-                date: new Date(date.getFullYear(), date.getMonth(), date.getDate() + i).toISOString().slice(0, 10), // <-- ISO date string
-                shortDate,
-                AMshift: [AMshift],
-                PMshift: [PMshift],
-            };
+        const count = Math.max(0, parseInt(qty1 || '0', 10) || 0);
+        setH1Values(prev => {
+            const next = prev.slice(0, count);
+            while (next.length < count) next.push(WATTAGE_OPTIONS[0]);
+            return next;
         });
-        const newWeek2 = Array.from({ length: 7 }, (_, i) => {
-            let localEmployees = [...employees]; // Make a copy for counting
-            let AMshift = findNewEmplFromList(-1, localEmployees, i + 1 + 7);
-            if (AMshift !== -1) {
-                localEmployees[AMshift] = { ...localEmployees[AMshift], numShifts: localEmployees[AMshift].numShifts + 1 };
-            }
-            let PMshift = findNewEmplFromList(AMshift, localEmployees, i + 1 + 7);
-            if (PMshift !== -1) {
-                localEmployees[PMshift] = { ...localEmployees[PMshift], numShifts: localEmployees[PMshift].numShifts + 1 };
-            }
+    }, [qty1, WATTAGE_OPTIONS]);
 
-            const day = i + 1;
-            const dayDate = new Date(date.getFullYear(), date.getMonth(), date.getDate() + i + 7).toLocaleDateString();
-            const shortDate = String(new Date(date.getFullYear(), date.getMonth(), date.getDate() + i + 7).getMonth() + 1) + '/' + String(new Date(date.getFullYear(), date.getMonth(), date.getDate() + i + 7).getDate());
-
-            if (AMshift !== -1) {
-                employees[AMshift].numShifts++;
-            }
-            if (PMshift !== -1) {
-                employees[PMshift].numShifts++;
-            }
-            return {
-                day,
-                date: new Date(date.getFullYear(), date.getMonth(), date.getDate() + i + 1).toISOString().slice(0, 10), // <-- ISO date string
-                shortDate,
-                AMshift: [AMshift],
-                PMshift: [PMshift],
-            };
+    // NEW: keep height-2 values in sync with qty2
+    useEffect(() => {
+        const count = Math.max(0, parseInt(qty2 || '0', 10) || 0);
+        setH2Values(prev => {
+            const next = prev.slice(0, count);
+            while (next.length < count) next.push(WATTAGE_OPTIONS[0]);
+            return next;
         });
-        setWeek1(newWeek1);
-        setWeek2(newWeek2);
-    }, [employees, date]);
-    
-    const onChange = (event: any, selectedDate?: Date | undefined) => {
-        setShow(true);
-        if (selectedDate){
-            setDate(selectedDate);
-            setShow(false);
-        } 
-    };
-    //DISPLAY
+    }, [qty2, WATTAGE_OPTIONS]);
+
+    // NEW: keep height-3 values in sync with qty3
+    useEffect(() => {
+        const count = Math.max(0, parseInt(qty3 || '0', 10) || 0);
+        setH3Values(prev => {
+            const next = prev.slice(0, count);
+            while (next.length < count) next.push(WATTAGE_OPTIONS[0]);
+            return next;
+        });
+    }, [qty3, WATTAGE_OPTIONS]);
+
     return (
-        <ScrollView contentContainerStyle={styles.container}>
-            {/* options */}
+        <ScrollView
+            style={styles.scroll}
+            contentContainerStyle={styles.contentContainer}
+            nestedScrollEnabled
+        >
+            <Text style={styles.title}>CCounter Main Page</Text>
+            <TextInput
+                style={[styles.input, { color: mode === 'dark' ? '#fff' : '#000' }]}
+                placeholder="Quantity of height 1 blocks"
+                placeholderTextColor={mode === 'dark' ? '#888' : '#aaa'}
+                keyboardType="number-pad"
+                inputMode="numeric"
+                value={qty1}
+                onChangeText={(t) => setQty1(t.replace(/[^0-9]/g, ''))}
+            />
+            <TextInput
+                style={[styles.input, { color: mode === 'dark' ? '#fff' : '#000' }]}
+                placeholder="Quantity of height 2 blocks"
+                placeholderTextColor={mode === 'dark' ? '#888' : '#aaa'}
+                keyboardType="number-pad"
+                inputMode="numeric"
+                value={qty2}
+                onChangeText={(t) => setQty2(t.replace(/[^0-9]/g, ''))}
+            />
+            <TextInput
+                style={[styles.input, { color: mode === 'dark' ? '#fff' : '#000' }]}
+                placeholder="Quantity of height 3 blocks"
+                placeholderTextColor={mode === 'dark' ? '#888' : '#aaa'}
+                keyboardType="number-pad"
+                inputMode="numeric"
+                value={qty3}
+                onChangeText={(t) => setQty3(t.replace(/[^0-9]/g, ''))}
+            />
+
+            <View style={[styles.separator, { width: '90%' }]} />
+            
+            {/* Height 1 Blocks */}
             <View style={styles.optionsContainer}>
-                <Text style={styles.title}>Options</Text>
-                <Pressable style={styles.button} onPress={() => setShow(true)}>
-                    <Text style={styles.buttonText}>Select First Day of the Schedule</Text>
-                </Pressable>
-                {/* was white */}
-                <Text style={{ color: c.text, fontSize: 18 }}>
-                    Selected date: {date.toLocaleDateString()}
+                <Text style={{ color: mode === 'dark' ? '#fff' : '#000', fontWeight: 'bold', width: '100%' }}>
+                    Height 1 Block Wattages:
                 </Text>
 
-                {/* Edit add and remove employee Names */}
-                <View style={styles.separator} />
-
-                <View style={{ gap: 4 }}>
-                    {/* was white */}
-                    <Text style={{ color: c.text, fontWeight: 'bold', fontSize: 20 }}>Edit Employees:</Text>
-                    
-                    {employees.map((emp, idx) => (
-                        <View key={`employee-edit-${emp.id}`}>
-                            <View key={emp.id} style={{ flexDirection: 'row', alignItems: 'center', marginVertical: 4, justifyContent: 'space-around', gap: 4 }}>
-                                {/* was white */}
-                                <Text style={{ color: c.text, fontSize: 18 }}>{emp.id + 1}</Text>
-                                <TextInput
-                                    style={{
-                                        // was '#444'
-                                        backgroundColor: c.card2,
-                                        // was 'white'
-                                        color: c.text,
-                                        fontSize: 18,
-                                        fontWeight: 'bold',
-                                        borderRadius: 4,
-                                        padding: 4,
-                                        width: 80,
-                                    }}
-                                    value={editingNames[idx]}
-                                    onChangeText={text => {
-                                        const updated = [...editingNames];
-                                        updated[idx] = text;
-                                        setEditingNames(updated);
-                                        setEmployees(emps => emps.map((e, i) => i === idx ? { ...e, name: text } : e));
-                                    }}
-                                    onEndEditing={() => {
-                                        // Update the employees state with the new name
-                                        setEmployees(emps =>
-                                            emps.map((e, i) => i === idx ? { ...e, name: editingNames[idx] } : e)
-                                        );
-                                    }}
-                                />
-                                {/* Remove button text can stay white for contrast on red */}
-                                <Pressable
-                                    style={{ backgroundColor: '#c00', borderRadius: 4, padding: 4 }}
-                                    onPress={() => {
-                                        const removedId = employees[idx]?.id ?? idx;
-
-                                        // Keep week assignments consistent with new IDs
-                                        const reindex = (d: Day) => ({
-                                            ...d,
-                                            AMshift: [
-                                                d.AMshift[0] === removedId
-                                                    ? -1
-                                                    : d.AMshift[0] > removedId
-                                                        ? d.AMshift[0] - 1
-                                                        : d.AMshift[0]
-                                            ],
-                                            PMshift: [
-                                                d.PMshift[0] === removedId
-                                                    ? -1
-                                                    : d.PMshift[0] > removedId
-                                                        ? d.PMshift[0] - 1
-                                                        : d.PMshift[0]
-                                            ],
-                                        });
-                                        setWeek1(prev => prev.map(reindex));
-                                        setWeek2(prev => prev.map(reindex));
-
-                                        // Remove employee and reassign IDs
-                                        setEmployees(emps => {
-                                            const filtered = emps.filter((_, i) => i !== idx);
-                                            return filtered.map((e, i) => ({ ...e, id: i }));
-                                        });
-                                        setEditingNames(names => names.filter((_, i) => i !== idx));
-                                        setEditingDaysCantWork(days => days.filter((_, i) => i !== idx));
-                                    }}
-                                >
-                                    <Text style={{ color: 'white', fontSize: 14, fontWeight: 'bold' }}>Remove</Text>
-                                </Pressable>
-                                {/* Add day off button (keep accent), text stays white for contrast */}
-                                <Pressable
-                                    style={{ backgroundColor: '#0af', borderRadius: 4, padding: 4 }}
-                                    onPress={() => {
-                                        setPickerEmployeeIdx(idx);
-                                        setPickerVisible(true);
-                                    }}
-                                >
-                                    <Text style={{ color: 'white', fontWeight: 'bold' }}>+ Day off</Text>
-                                </Pressable>
-                                {/* Remove day off button (keep accent), text stays white for contrast */}
-                                <Pressable
-                                    style={{ backgroundColor: '#fa0', borderRadius: 4, padding: 4 }}
-                                    onPress={() => {
-                                        // Remove the last day off for this employee, if any
-                                        setEmployees(emps =>
-                                            emps.map((e, i) =>
-                                                i === idx && e.daysCantWork.length > 0
-                                                    ? { ...e, daysCantWork: e.daysCantWork.slice(0, -1) }
-                                                    : e
-                                            )
-                                        );
-                                        setEditingDaysCantWork(days =>
-                                            days.map((d, i) =>
-                                                i === idx
-                                                    ? d
-                                                        .split(',')
-                                                        .filter((_, j, arr) => j < arr.length - 1)
-                                                        .join(',')
-                                                    : d
-                                            )
-                                        );
-                                    }}
-                                >
-                                    <Text style={{ color: 'white', fontWeight: 'bold' }}>- Day off</Text>
-                                </Pressable>
-                            </View>
-                            <View key={`employee-days-off-${emp.id}`}>
-                                {/* was white */}
-                                <Text style={{ color: c.text, fontSize: 14, fontWeight: 'bold' }}>
-                                    {emp.numShifts}{" shifts, "}
-                                    Days off: {employees[idx].daysCantWork
-                                        .map(dayNum => {
-                                            const dayDate = new Date(date.getFullYear(), date.getMonth(), date.getDate() + (dayNum - 1));
-                                            return `${dayDate.getMonth() + 1}/${dayDate.getDate()}`;
-                                        })
-                                        .join(', ')
-                                    }
-                                </Text>
-                            </View>
-                        </View>            
-                        ))}
-                    <Pressable style={styles.button} onPress={addEmployee}>
-                        <Text style={styles.buttonText}>+Add Employee</Text>
-                    </Pressable>
-                </View>
-
-                {pickerVisible && (
-                    <DateTimePicker
-                        value={date}
-                        mode="date"
-                        display="default"
-                        onChange={(event, selectedDate) => {
-                            setPickerVisible(false);
-                            let dayIdx: number | undefined = undefined;
-                            if (selectedDate && pickerEmployeeIdx !== null) {
-                                // Only allow days ON or AFTER the starting date
-                                const dayBefore = new Date(date);
-                                dayBefore.setDate(dayBefore.getDate() - 1);
-                                if (selectedDate < dayBefore) {
-                                    alert("You cannot add a day off before the starting day of the schedule.");
-                                    setPickerEmployeeIdx(null);
-                                    return;
-                                }
-                                let diffTime = Math.abs(selectedDate.getTime() - date.getTime()); // difference in milliseconds
-                                let diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1; // difference in days
-                                if (selectedDate.getDate() == date.getDate()) {
-                                    diffDays = 1;
-                                }
-                                dayIdx = diffDays;
-                                setEmployees(emps =>
-                                    emps.map((e, i) =>
-                                        i === pickerEmployeeIdx && !e.daysCantWork.includes(dayIdx!)
-                                            ? { ...e, daysCantWork: [...e.daysCantWork, dayIdx!] }
-                                            : e
-                                    )
-                                );
-                                setEditingDaysCantWork(days =>
-                                    days.map((d, i) =>
-                                        i === pickerEmployeeIdx && dayIdx !== undefined
-                                            ? [...new Set([...d.split(',').filter(x => x !== '').map(Number), selectedDate.getDate().toLocaleString])].join(',')
-                                            : d
-                                    )
-                                );
-                            }
-                            setPickerEmployeeIdx(null);
-                        }}
-                    />
-                )}
-
-                {modalVisible && selectedShiftInfo && (
-                    <Modal
-                        visible={modalVisible}
-                        transparent
-                        animationType="fade"
-                        onRequestClose={() => setModalVisible(false)}
-                    >
-                        <View style={{
-                            flex: 1,
-                            backgroundColor: 'rgba(0,0,0,0.5)',
-                            justifyContent: 'center',
-                            alignItems: 'center'
-                        }}>
-                            <View style={{
-                                backgroundColor: c.card,
-                                padding: 18,
-                                borderRadius: 12,
-                                alignItems: 'center'
-                            }}>
-                                {/* was white */}
-                                <Text style={{color: c.text, fontSize: 20, marginBottom: 16, fontWeight: 'bold'}}>Shift Options</Text>
-                                {/* was white */}
-                                <Text style={{color: c.text, fontSize: 18, marginBottom: 8, lineHeight: 24}}>
-                                    {selectedShiftInfo.employeeIdx !== -1
-                                        ? `Employee: ${employees[selectedShiftInfo.employeeIdx].name}\n`
-                                        : 'No employee assigned to this shift.\n'}
-                                    {selectedShiftInfo.week === 1
-                                            ? `Date: ${week1[selectedShiftInfo.dayIdx].shortDate}\n`
-                                            : `Date: ${week2[selectedShiftInfo.dayIdx].shortDate}\n`}
-                                    {`${selectedShiftInfo.shiftType} shift `}
-                                </Text>
-                                <Picker
-                                    selectedValue={selectedEmployeeIdx}
-                                    // was white / '#444'
-                                    style={{ height: 50, width: 200, color: c.text, backgroundColor: c.card2 }}
-                                    onValueChange={(itemValue, itemIndex) => setSelectedEmployeeIdx(itemValue)}
-                                >
-                                    {employees.map(emp => (
-                                        <Picker.Item key={emp.id} label={emp.name} value={emp.id} />
-                                    ))}
-                                </Picker>
-                                {/* Buttons keep white text for contrast */}
-                                <Pressable
-                                    onPress={() => {
-                                        if (selectedEmployeeIdx !== null) {
-                                            // Swap logic: replace employees[selectedShiftInfo.employeeIdx].name with selectedEmployeeIdx
-                                            
-                                            if (selectedShiftInfo.week === 1) {
-                                                setWeek1(prevWeek1 => {
-                                                    const updated = [...prevWeek1];
-                                                    if (selectedShiftInfo.shiftType === 'AM') {
-                                                        updated[selectedShiftInfo.dayIdx].AMshift[0] = selectedEmployeeIdx;
-                                                    } else {
-                                                        updated[selectedShiftInfo.dayIdx].PMshift[0] = selectedEmployeeIdx;
-                                                    }
-                                                    employees[selectedEmployeeIdx].numShifts++;
-                                                    employees[selectedShiftInfo.employeeIdx].numShifts--;
-                                                    return updated;
-                                                });
-                                            } else if (selectedShiftInfo.week === 2) {
-                                                setWeek2(prevWeek2 => {
-                                                    const updated = [...prevWeek2];
-                                                    if (selectedShiftInfo.shiftType === 'AM') {
-                                                        updated[selectedShiftInfo.dayIdx].AMshift[0] = selectedEmployeeIdx;
-                                                    } else {
-                                                        updated[selectedShiftInfo.dayIdx].PMshift[0] = selectedEmployeeIdx;
-                                                    }
-                                                    employees[selectedEmployeeIdx].numShifts++;
-                                                    employees[selectedShiftInfo.employeeIdx].numShifts--;
-                                                    return updated;
-                                                });
-                                            }
-                                            setModalVisible(false);
-                                        }
-                                    }}
-                                    style={{
-                                        backgroundColor: selectedEmployeeIdx !== null ? '#00f' : '#888',
-                                        borderRadius: 8,
-                                        padding: 8,
-                                        marginTop: 8,
-                                        opacity: selectedEmployeeIdx !== null ? 1 : 0.5
-                                    }}
-                                    disabled={selectedEmployeeIdx === null}
-                                >
-                                    <Text style={{color: '#fff', fontSize: 18}}>Swap Employee</Text>
-                                </Pressable>
-                                <Pressable style={{borderColor: '#888', borderWidth: 1, borderRadius: 8, padding: 8, marginTop: 8}} onPress={() => setModalVisible(false)}>
-                                    {/* was white */}
-                                    <Text style={{color: c.text, fontSize: 18}}>Cancel</Text>
-                                </Pressable>
-                            </View>
-                        </View>
-                    </Modal>
-                )}
-                {show && (
-                    <DateTimePicker
-                        value={date}
-                        mode="date"
-                        display="default"
-                        onChange={onChange}
-                    />
-                )}
+                {h1Values.map((val, idx) => (
+                    <View key={`h1-${idx}`} style={styles.pickerWrap}>
+                        {/* Plain numeric input for each block */}
+                        <TextInput
+                            style={[styles.input, styles.wattInput, { textAlign: 'center' }]}
+                            keyboardType="number-pad"
+                            inputMode="numeric"
+                            value={String(h1Values[idx] ?? 0)}
+                            onChangeText={(t) => {
+                                const n = parseInt(t.replace(/[^0-9]/g, ''), 10);
+                                setH1Values(prev => {
+                                    const next = [...prev];
+                                    next[idx] = isNaN(n) ? 0 : n;
+                                    return next;
+                                });
+                            }}
+                        />
+                    </View>
+                ))}
             </View>
-            
-            <Text style={styles.title}>Your Schedule:</Text>
-            
-            {/*actual schedule goes here*/}
-            <View style={{ width: '90%', alignItems: 'center' }}>
-                {/* was white */}
-                <Text style={{fontSize: 18, color: c.text}}>Hold on an employee name to swap</Text>
-            </View>
-            
-            <View style={styles.scheduleContainer}>
-                <View style={[styles.optionsContainer, {width: '100%', marginBottom: 8, borderRadius: 0}]}>
-                    {/* was white */}
-                    <Text style={{ color: c.text, fontSize: 18, textAlign: 'center', paddingVertical: 4 }}>
-                        Up to date {new Date().toLocaleDateString()} - {new Date().toLocaleTimeString()}
-                    </Text>
-                </View>
 
-                {/* week 1 */}
-                <View style={styles.weekContainer}>   
-                    {week1.map((item, idx) => {
-                        const dateObj = new Date(date.getFullYear(), date.getMonth(), date.getDate() + idx);
-                        const dayOfWeek = daysOfWeek[dateObj.getDay()];
-                        return (
-                            <View key={idx} style={styles.dayContainer}>
-                                {/* was white */}
-                                <Text style={{color: c.text, fontSize: 18, lineHeight: 26}}>
-                                    {item.shortDate}{'\n'}{dayOfWeek}
-                                </Text>
-                                
-                                <View style={styles.cells}>
-                                    <View style={styles.cell}>
-                                        {/* was white */}
-                                        <Text style={{color: c.text, fontSize: 18, fontWeight: 'bold'}}>
-                                            AM:
-                                        </Text>
-                                        <Pressable onLongPress={() => handleLongPress(item.AMshift[0], 1, idx, 'AM', new Date(date.getFullYear(), date.getMonth(), date.getDate() + idx))}>
-                                            {/* bg was '#444', text was white */}
-                                            <Text style={{color: c.text, fontSize: 18, fontWeight: 'bold', backgroundColor: c.card2, borderRadius: 4}}>
-                                                {" "}{item.AMshift[0] !== -1 && employees[item.AMshift[0]] ? employees[item.AMshift[0]].name : 'No one'}{" "}
-                                            </Text>
-                                        </Pressable>
-                                    </View>
-                                    <View style={styles.separator} />
-                                    <View style={styles.cell}>
-                                        {/* was white */}
-                                        <Text style={{color: c.text, fontSize: 18, fontWeight: 'bold'}}>
-                                            PM:
-                                        </Text>
-                                        <Pressable onLongPress={() => handleLongPress(item.PMshift[0], 1, idx, 'PM', new Date(date.getFullYear(), date.getMonth(), date.getDate() + idx))}>
-                                            {/* bg was '#222', text was white */}
-                                            <Text style={{color: c.text, fontSize: 18, fontWeight: 'bold', backgroundColor: c.card3, borderRadius: 4}}>
-                                                {" "}{item.PMshift[0] !== -1 && employees[item.PMshift[0]] ? employees[item.PMshift[0]].name : 'No one'}{" "}
-                                            </Text>
-                                        </Pressable>
-                                    </View>
-                                </View>
-                            </View>
-                        );
-                    })}
-                </View>
-                
-                {/* week 2 */}
-                <View style={styles.weekContainer}>   
-                    {week2.map((item, idx) => {
-                        const dateObj = new Date(date.getFullYear(), date.getMonth(), date.getDate() + idx + 7);
-                        const dayOfWeek = daysOfWeek[dateObj.getDay()];
-                        return (
-                            <View key={idx} style={styles.dayContainer}>
-                                {/* was white */}
-                                <Text style={{color: c.text, fontSize: 18, lineHeight: 26}}>
-                                    {item.shortDate}{'\n'}{dayOfWeek}
-                                </Text>
-                                
-                                <View style={styles.cells}>
-                                    <View style={styles.cell}>
-                                        {/* was white */}
-                                        <Text style={{color: c.text, fontSize: 18, fontWeight: 'bold'}}>
-                                            AM:
-                                        </Text>
-                                        <Pressable onLongPress={() => handleLongPress(item.AMshift[0], 2, idx, 'AM', new Date(date.getFullYear(), date.getMonth(), date.getDate() + idx + 7))}>
-                                            {/* bg was '#444', text was white */}
-                                            <Text style={{color: c.text, fontSize: 18, fontWeight: 'bold', backgroundColor: c.card2, borderRadius: 4}}>
-                                                {" "}{item.AMshift[0] !== -1 && employees[item.AMshift[0]] ? employees[item.AMshift[0]].name : 'No one'}{" "}
-                                            </Text>
-                                        </Pressable>
-                                    </View>
-                                    <View style={styles.separator} />
-                                    <View style={styles.cell}>
-                                        {/* was white */}
-                                        <Text style={{color: c.text, fontSize: 18, fontWeight: 'bold'}}>
-                                            PM:
-                                        </Text>
-                                        <Pressable onLongPress={() => handleLongPress(item.PMshift[0], 2, idx, 'PM', new Date(date.getFullYear(), date.getMonth(), date.getDate() + idx + 7))}>
-                                            {/* bg was '#222', text was white */}
-                                            <Text style={{color: c.text, fontSize: 18, fontWeight: 'bold', backgroundColor: c.card3, borderRadius: 4}}>
-                                                {" "}{item.PMshift[0] !== -1 && employees[item.PMshift[0]] ? employees[item.PMshift[0]].name : 'No one'}{" "}
-                                            </Text>
-                                        </Pressable>
-                                    </View>
-                                </View>
-                            </View>
-                        );
-                    })}
-                </View>
+            {/* Height 2 */}
+            <View style={styles.optionsContainer}>
+                <Text style={{ color: mode === 'dark' ? '#fff' : '#000', fontWeight: 'bold', width: '100%' }}>
+                    Height 2 Block Wattages:
+                </Text>
+
+                {h2Values.map((val, idx) => (
+                    <View key={`h2-${idx}`} style={styles.pickerWrap}>
+                        <TextInput
+                            style={[styles.input, styles.wattInput, { textAlign: 'center' }]}
+                            keyboardType="number-pad"
+                            inputMode="numeric"
+                            value={String(h2Values[idx] ?? 0)}
+                            onChangeText={(t) => {
+                                const n = parseInt(t.replace(/[^0-9]/g, ''), 10);
+                                setH2Values(prev => {
+                                    const next = [...prev];
+                                    next[idx] = isNaN(n) ? 0 : n;
+                                    return next;
+                                });
+                            }}
+                        />
+                    </View>
+                ))}
             </View>
-            
-            {/* Shuffle shifts */}
-            <Pressable style={[styles.button, { width: '90%', marginTop: 0, borderRadius: 0 }]} onPress={() => {resetShifts();}}>
-                <Text style={styles.buttonText}>Shuffle Shifts</Text>
+
+            {/* Height 3 */}
+            <View style={styles.optionsContainer}>
+                <Text style={{ color: mode === 'dark' ? '#fff' : '#000', fontWeight: 'bold', width: '100%' }}>
+                    Height 3 Block Wattages:
+                </Text>
+
+                {h3Values.map((val, idx) => (
+                    <View key={`w3-${idx}`} style={styles.pickerWrap}>
+                        <TextInput
+                            style={[styles.input, styles.wattInput, { textAlign: 'center' }]}
+                            keyboardType="number-pad"
+                            inputMode="numeric"
+                            value={String(h3Values[idx] ?? 0)}
+                            onChangeText={(t) => {
+                                const n = parseInt(t.replace(/[^0-9]/g, ''), 10);
+                                setH3Values(prev => {
+                                    const next = [...prev];
+                                    next[idx] = isNaN(n) ? 0 : n;
+                                    return next;
+                                });
+                            }}
+                        />
+                    </View>
+                ))}
+            </View>
+
+            <Pressable style={styles.button} onPress={() => {
+                // Calculation logic to be implemented
+            }}>
+                <Text style={styles.buttonText}>Schematate</Text>
             </Pressable>
-            <View style={styles.separator} />
 
-            {/* Save schedule button */}
-            <Pressable style={styles.button} onPress={() => saveSchedule({ employees, week1, week2 })}>
-                <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-around' }}>
-                    <Ionicons name="save" size={22} color="#fff" style={{ marginLeft: 8 }} />
-                    <Text style={styles.buttonText}>Save Schedule</Text>
+            {/* Table with two columns of blocks organized by wattage descending*/}
+            <View style={styles.tableContainer}>
+                <View style={styles.column}>
+
                 </View>
-            </Pressable>
-            
-            {/* was '#444' */}
-            <View style={{ width: '90%', padding: 8, backgroundColor: c.card2, borderRadius: 8, gap: 8, marginBottom: 16 }}>
-                <Text style={styles.title}>Info:</Text>
-                {/* was white */}
-                <Text style={{ color: c.text, fontSize: 18, textAlign: 'left' }}>
-                    This is a schedule management app for the managers of Aquaguard.
-                </Text>
-                <View style= {styles.separator} />
-                {/* was white */}
-                <Text style={{ color: c.text, fontSize: 18, textAlign: 'left' }}>
-                    Start by selecting the first day of the schedule.
-                    Then add employees, edit their names, and set the days they are unable to work.
-                    Then press Shuffle Shifts. 
-                    To manually adjust shifts, long press on the name of an employee, then select the employee you want to swap them with.
-                </Text>
-                <View style= {styles.separator} />
-                {/* was white */}
-                <Text style={{ color: c.text, fontSize: 18, textAlign: 'left' }}>
-                    Rules in place when shuffled:
-                    {"\n"}- Employees are never selected twice in the same day
-                    {"\n"}- Employees are never selected on days they cannot work
-                    {"\n"}- Employees are given a roughly equal number of shifts*
-                </Text>
-                <View style= {styles.separator} />
-                {/* was white */}
-                <Text style={{ color: c.text, fontSize: 18, textAlign: 'left' }}>
-                    *Every employee is given a roughly equal number of shifts by default.
-                    However, if you wish to set an unequal number of shifts between employees,
-                    long press on their name for each shift and swap them out manually.
-                    The reason for this is to ensure regular balance in the distribution of shifts,
-                    and that the managers are always conscious of any imbalances.
-                </Text>
+                <View style={styles.column}>
+
+                </View>
             </View>
+
         </ScrollView>
     );
 }
 
 const themedStyles = (mode: 'light' | 'dark') => {
-    const c = colorsFor(mode);
-    return StyleSheet.create({
-        container: {
-            display: 'flex',
-            flexDirection: 'column',
-            justifyContent: 'flex-start',
-            backgroundColor: c.bg, // was '#222'
-            alignItems: 'center',
-            gap: 8,
+  const c = colorsFor(mode);
+  return StyleSheet.create({
+        
+    scroll: {
+        flex: 1,
+        backgroundColor: c.bg,
         },
-        optionsContainer:{
-            display: 'flex',
-            flexDirection: 'column',
-            justifyContent: 'space-between',
-            backgroundColor: c.card,
-            borderRadius: 8,
-            paddingHorizontal: 8,
-            paddingVertical: 4,
-            marginTop: 16,
-            width: '90%',
-            gap: 8,
-        },
-        scheduleContainer: {
-            display: 'flex',
-            flexDirection: 'row',
-            flexWrap: 'wrap',
-            justifyContent: 'space-between',
-            width: '90%',
-        },
-        weekContainer: {
-            display: 'flex',
-            flexDirection: 'column',
-            width: '49%',
-            gap: 8,
-        },
-        dayContainer: {
-            display: 'flex',
-            flexDirection: 'row',
-            justifyContent: 'space-between',
-            width: '100%',
-            padding: 4,
-            backgroundColor: c.card, // was '#333'
-            alignContent: 'stretch',
-        },
-        cells: {
-            display: 'flex',
-            width: '75%',
-            paddingLeft: 8,
-            flexDirection: 'column',
-            alignSelf: 'stretch',
-        },
-        cell: {
-            display: 'flex',
-            flexDirection: 'row',
-            justifyContent: 'space-between',
-        },
-        title: {
-            fontSize: 28,
-            fontWeight: 'bold',
-            color: c.text, // was 'white'
-        },
-        link: {
-            color: '#007AFF',
-            fontSize: 18,
-        },
-        button: {
-            backgroundColor: '#008AFF',
-            paddingVertical: 3,
-            paddingHorizontal: 0,
-            marginVertical: 4,
-            borderRadius: 8,
-        },
-        buttonText: {
-            color: '#fff',
-            fontSize: 18,
-            textAlign: 'center',
-            fontWeight: 'bold',
-            padding: 8,
-        },
-        separator: {
-            height: 1,
-            backgroundColor: mode === 'dark' ? '#666' : '#ddd',
-            marginVertical: 1,
-        },
+    contentContainer: {
+        alignItems: 'center',
+        justifyContent: 'flex-start',
+        gap: 8,
+    },
+    optionsContainer: {
+        display: 'flex',
+        flexDirection: 'row',
+        justifyContent: 'flex-start',
+        backgroundColor: c.card,
+        borderRadius: 8,
+        paddingHorizontal: 8,
+        paddingVertical: 8,
+        width: '90%',
+        gap: 8,
+        flexWrap: 'wrap',
+    },
+    tableContainer: {
+        flexDirection: 'row',
+        justifyContent: 'space-around',
+        alignItems: 'center',
+        width: '90%',
+        backgroundColor: c.card,
+        minHeight: 100,
+    },
+    column: {
+        width: '40%',
+        height: '90%',
+        backgroundColor: c.card2,
+    },
+    pickerWrap: {
+        flexDirection: 'column',
+        alignItems: 'center',
+        minWidth: 0,
+        gap: 6,
+        
+    },
+    wattInput: {
+        width: 30,
+        paddingVertical: 6,
+        color: mode === 'dark' ? '#fff' : '#000', 
+        backgroundColor: c.card2,
+    },
+    title: {
+        fontSize: 28,
+        fontWeight: 'bold',
+        color: c.text,
+    },
+    link: {
+        color: '#007AFF',
+        fontSize: 18,
+    },
+    button: {
+        backgroundColor: '#008AFF',
+        paddingVertical: 3,
+        paddingHorizontal: 0,
+        marginVertical: 4,
+        borderRadius: 8,
+    },
+    buttonText: {
+        color: '#fff',
+        fontSize: 18,
+        textAlign: 'center',
+        fontWeight: 'bold',
+        padding: 8,
+    },
+    separator: {
+        height: 1,
+        backgroundColor: mode === 'dark' ? '#666' : '#ddd',
+        marginVertical: 1,
+    },
+    input: {
+        width: '90%',
+        padding: 8,
+        borderRadius: 8,
+        backgroundColor: c.card,
+    },
     });
 };
-
 export default mainpage;
