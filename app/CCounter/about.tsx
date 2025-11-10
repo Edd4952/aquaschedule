@@ -1,35 +1,71 @@
+import * as Clipboard from 'expo-clipboard';
 import { useLocalSearchParams } from 'expo-router';
-import React from 'react';
-import { StyleSheet, Text, View } from 'react-native';
+import React, { useEffect, useRef, useState } from 'react';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { colorsFor, useThemeMode } from '../theme';
 
 const About = () => {
     const { id } = useLocalSearchParams();
     const { mode } = useThemeMode();
     const styles = themedStyles(mode);
+    const c = colorsFor(mode);
+
+    const [showCopied, setShowCopied] = useState(false);
+    const [toastMessage, setToastMessage] = useState('Copied');
+    const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+    const copy = async (value: string, label: string) => {
+        try {
+            await Clipboard.setStringAsync(value);
+            setToastMessage(`${label} copied`);
+            setShowCopied(true);
+            if (timerRef.current) clearTimeout(timerRef.current);
+            timerRef.current = setTimeout(() => setShowCopied(false), 1400);
+        } catch (e) {
+            setToastMessage('Copy failed');
+            setShowCopied(true);
+            if (timerRef.current) clearTimeout(timerRef.current);
+            timerRef.current = setTimeout(() => setShowCopied(false), 1400);
+        }
+    };
+
+    useEffect(() => {
+        return () => { if (timerRef.current) clearTimeout(timerRef.current); };
+    }, []);
 
     return (
         <View style={styles.container}>
             <View style={styles.topic}>
                 <Text style={styles.title}>About Page</Text>
                 <Text style={styles.text2}>
-                    Hi, I'm Edward.{'\n'}
-                    I created this program for my part time job at Aquaguard.
-                    My hope is to provide a tool that will save the time and hassle of
-                    many Aquaguard managers.
-                    This project was made in React Native + Expo.
-                    It is a work in progress; you may find bugs.
+                    Hello Chandler, {'\n'}
+                    This app was made.{'\n'}
+                    I hope you'll share with me that good kush :){'\n'}
+                    Lmk if you have any questions or if the app needs an update. 
                 </Text>
             </View>
             <View style={styles.topic}>
                 <Text style={styles.title}>Found a bug?</Text>
-                <Text style={[styles.title, {marginTop: 0}]}>Recommendations?</Text>
-                <Text style={[styles.title, {marginTop: 0}]}>Questions?</Text>
+                <Text style={[styles.title, { marginTop: 0 }]}>Recommendations?</Text>
+                <Text style={[styles.title, { marginTop: 0 }]}>Questions?</Text>
                 <Text style={styles.text2}>
-                    Reach out to our skilled team of professionals!{'\n\n'}
-                    Email: zilbert3dward@gmail.com
+                    Reach out to our skilled team of professionals!{'\n'}
                 </Text>
+                <View style={{ marginHorizontal: 8, gap: 6 }}>
+                    <Pressable onPress={() => copy('zilbert3dward@gmail.com', 'Email')}>
+                        <Text style={[styles.text2, styles.link]}>Email: zilbert3dward@gmail.com</Text>
+                    </Pressable>
+                    <Pressable onPress={() => copy('ezilbert.06', 'Instagram')}>
+                        <Text style={[styles.text2, styles.link]}>Insta: ezilbert.06</Text>
+                    </Pressable>
+                </View>
             </View>
+
+            {showCopied && (
+                <View style={styles.toast}>
+                    <Text style={{ color: '#fff', fontWeight: '600' }}>{toastMessage}</Text>
+                </View>
+            )}
         </View>
     );
 };
@@ -51,23 +87,11 @@ const themedStyles = (mode: 'light' | 'dark') => {
             marginLeft: 8,
             fontWeight: 'bold',
         },
-        text1: {
-            color: c.text,
-            fontSize: 18,
-            margin: 8,
-            fontWeight: 'bold',
-            lineHeight: 25,
-        },
         text2: {
             color: c.text,
             fontSize: 18,
             margin: 8,
             lineHeight: 25,
-        },
-        separator: {
-            height: 1,
-            backgroundColor: mode === 'dark' ? '#666' : '#ddd',
-            marginVertical: 1,
         },
         topic: {
             display: 'flex',
@@ -82,6 +106,18 @@ const themedStyles = (mode: 'light' | 'dark') => {
             borderColor: mode === 'dark' ? '#111' : '#e6e6e6',
             borderWidth: 1,
             gap: 8,
+        },
+        link: {
+            textDecorationLine: 'underline',
+        },
+        toast: {
+            position: 'absolute',
+            bottom: 40,
+            backgroundColor: '#28a745',
+            paddingHorizontal: 16,
+            paddingVertical: 10,
+            borderRadius: 12,
+            elevation: 4,
         },
     });
 };

@@ -1,418 +1,149 @@
-import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { Picker } from '@react-native-picker/picker';
 import { useFocusEffect } from '@react-navigation/native';
-import React, { useState } from 'react';
-import { Modal, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
-import { colorsFor, useThemeMode } from '../theme'; // <-- add
+import React from 'react';
+import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { colorsFor, useThemeMode } from '../theme';
+import { Ionicons } from '@expo/vector-icons';
 
-type Employee = {
+type Schematic = {
     id: number;
-    name: string;
-    numShifts: number;
-    daysCantWork: number[];
+    savedAt: string;
+    column1: { blocks: { wattage: number; size: number }[] };
+    column2: { blocks: { wattage: number; size: number }[] };
+    qty1: string;
+    qty2: string;
+    qty3: string;
+    h1Values: number[];
+    h2Values: number[];
+    h3Values: number[];
 };
 
-type Day = {
-    shortDate: string;
-    date: string;
-    AMshift: number[];
-    PMshift: number[];
-};
+const SCHEMATICS_KEY = 'savedSchematics';
 
-type Schedule = {
-    employees: Employee[];
-    week1: Day[];
-    week2: Day[];
-    savedAt: string; // ISO string
-};
-
-const SCHEDULES_KEY = 'savedSchedules';
-
-//
-function generateWeek(startDate: Date): Day[] {
-    return Array.from({ length: 7 }).map((_, idx) => {
-        const date1 = new Date(startDate);
-        date1.setDate(startDate.getDate() + idx);
-        return {
-            shortDate: `${date1.getMonth() + 1}/${date1.getDate()}`, // e.g., "8/5"
-            date: date1.toISOString().slice(0, 10),             // e.g., "2024-08-05"
-            AMshift: [-1],
-            PMshift: [-1],
-        };
-    });
-}
-
-const week1 = generateWeek(new Date("2024-08-05")); // Replace with your actual week start date
-const week2 = generateWeek(new Date("2024-08-12")); // Next week, for example
-
-const schedule: Schedule = {
-    employees: [], // your employees array
-    week1,
-    week2,
-    savedAt: new Date().toISOString(),
-};
-//
 const SavedPage = () => {
-    const { mode } = useThemeMode();              // <-- add
-    const styles = themedStyles(mode);            // <-- add
-    const c = colorsFor(mode);                    // <-- add
+    const { mode } = useThemeMode();
+    const styles = themedStyles(mode);
+    const c = colorsFor(mode);
 
-    const [schedules, setSchedules] = useState<Schedule[]>([]);
-    const [selectedIdx, setSelectedIdx] = useState<number | null>(null);
+    const [schematics, setSchematics] = React.useState<Schematic[]>([]);
+    const [selectedSchematicIdx, setSelectedSchematicIdx] = React.useState<number | null>(null);
 
-    // Modal state for swap
-    const [modalVisible, setModalVisible] = useState(false);
-    const [selectedShiftInfo, setSelectedShiftInfo] = useState<{
-        employeeIdx: number;
-        week: 1 | 2;
-        dayIdx: number;
-        shiftType: 'AM' | 'PM';
-        date: Date;
-    } | null>(null);
-    const [selectedEmployeeIdx, setSelectedEmployeeIdx] = useState<number | null>(null);
-
-    // Modal state for delete confirmation
-    const [deleteModalVisible, setDeleteModalVisible] = useState(false);
-    const [scheduleToDeleteIdx, setScheduleToDeleteIdx] = useState<number | null>(null);
-
-    // Load all saved schedules when page is focused
+    // Load saved schematics on focus
     useFocusEffect(
         React.useCallback(() => {
-            const loadSchedules = async () => {
-                const raw = await AsyncStorage.getItem(SCHEDULES_KEY);
-                if (raw) {
-                    const parsed = JSON.parse(raw);
-                    console.log(parsed);
-                    setSchedules(parsed);
+            const loadData = async () => {
+                try {
+                    const rawSchems = await AsyncStorage.getItem(SCHEMATICS_KEY);
+                    const parsed: Schematic[] = rawSchems ? JSON.parse(rawSchems) : [];
+                    setSchematics(parsed);
+                    if (parsed.length > 0 && selectedSchematicIdx === null) setSelectedSchematicIdx(0);
+                } catch (e) {
+                    console.warn('Failed to load schematics', e);
+                    setSchematics([]);
                 }
             };
-            loadSchedules();
-        }, [])
+            loadData();
+        }, [selectedSchematicIdx])
     );
 
-    // Viewer for the selected schedule
-    const selectedSchedule = selectedIdx !== null ? schedules[selectedIdx] : null;
+    const selectedSchematic = selectedSchematicIdx !== null ? schematics[selectedSchematicIdx] : null;
 
-    // Swap handler for long press
-    const handleLongPress = (
-        employeeIdx: number,
-        week: 1 | 2,
-        dayIdx: number,
-        shiftType: 'AM' | 'PM',
-        shiftDate: Date
-    ) => {
-        setSelectedShiftInfo({ employeeIdx, week, dayIdx, shiftType, date: shiftDate });
-        setModalVisible(true);
+    const removeSchematic = async (id: number) => {
+        setSchematics(prev => {
+            const next = prev.filter(s => s.id !== id);
+            // persist
+            AsyncStorage.setItem(SCHEMATICS_KEY, JSON.stringify(next)).catch(e =>
+                console.warn('Failed to persist schematics after delete', e)
+            );
+            // fix selection
+            if (selectedSchematicIdx !== null) {
+                const removedIdx = prev.findIndex(s => s.id === id);
+                if (removedIdx === selectedSchematicIdx) {
+                    setSelectedSchematicIdx(next.length === 0 ? null : 0);
+                } else if (removedIdx < selectedSchematicIdx) {
+                    setSelectedSchematicIdx(i => (i === null ? i : i - 1));
+                }
+            }
+            return next;
+        });
     };
 
-    const daysOfWeek = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
-
-    if (schedules.length === 0) {
-        return (
-            <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: c.bg }}>
-                <Text style={{ color: c.text, fontSize: 22, textAlign: 'center', width: '80%' }}>
-                    No saved schedules yet. Create a schedule first, and save it.
-                </Text>
-            </View>
-        );
-    }
-
     return (
-        <ScrollView
-            style={{ flex: 1 }}
-            contentContainerStyle={styles.container}
-        >
-            <Text style={styles.title}>Saved Schedules</Text>
+        <ScrollView style={{ flex: 1 }} contentContainerStyle={styles.container}>
+            <Text style={styles.title}>Saved Schematics</Text>
+
             <View style={styles.optionsContainer}>
-                {schedules.map((sched, idx) => (
-                    <View key={sched.savedAt} style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+                {schematics.length === 0 && (
+                    <Text style={{ color: c.text, fontSize: 18 }}>No schematics saved yet.</Text>
+                )}
+                {schematics.map((s, idx) => (
+                    <View key={s.id} style={{ flexDirection: 'row', alignItems: 'center' }}>
                         <Pressable
                             style={[
                                 styles.button,
-                                selectedIdx === idx && styles.selectedSchedule
+                                { flex: 1 },
+                                selectedSchematicIdx === idx && { backgroundColor: '#0055ff', borderWidth: 2 }
                             ]}
-                            onPress={() => setSelectedIdx(idx)}
+                            onPress={() => setSelectedSchematicIdx(idx)}
                         >
-                            <Text style={styles.buttonText}>
-                                {new Date(sched.savedAt).toLocaleString()}
-                            </Text>
+                            <Text style={styles.buttonText}>{new Date(s.savedAt).toLocaleString()}</Text>
                         </Pressable>
                         <Pressable
-                            style={{
-                                flex: 0.9,
-                                paddingVertical: 8,
-                                backgroundColor: '#c00',
-                                borderRadius: 8,
-                                justifyContent: 'center',
-                                alignItems: 'center',
-                            }}
-                            onPress={() => {
-                                setScheduleToDeleteIdx(idx);
-                                setDeleteModalVisible(true);
-                            }}
+                            style={[styles.button, { backgroundColor: '#cc3b3b', marginLeft: 6, paddingHorizontal: 12, paddingVertical: 8 }]}
+                            onPress={() => removeSchematic(s.id)}
                         >
-                            <Ionicons name="trash" size={25} color="#fff" />
+                            <Ionicons name="trash" size={28} color="#fff" />
                         </Pressable>
                     </View>
                 ))}
             </View>
-            
-            {selectedSchedule ? (
-                <View style={[styles.scheduleContainer, { marginBottom: 10 }]}>
 
-                    <View style={[styles.optionsContainer, {width: '100%', marginBottom: 8, borderRadius: 0}]}>
-                        <Text style={{ color: c.text, fontSize: 18, textAlign: 'center', paddingVertical: 4 }}>
-                            Up to date {new Date().toLocaleDateString()} - {new Date().toLocaleTimeString()}
-                        </Text>
-                    </View>
+            {selectedSchematic && (
+                <View style={[styles.optionsContainer, { alignItems: 'center', gap: 12, marginBottom: 8 }]}>
+                    <Text style={{ color: c.text, fontSize: 20, fontWeight: 'bold' }}>
+                        Schematic saved {new Date(selectedSchematic.savedAt).toLocaleString()}
+                    </Text>
+                    <Text style={{ color: c.text }}>
+                        Qty: 1P={selectedSchematic.qty1 || 0} 2P={selectedSchematic.qty2 || 0} 3P={selectedSchematic.qty3 || 0}
+                    </Text>
 
-                    {/* week 1 */}
-                    <View style={styles.weekContainer}>
-                        {selectedSchedule.week1.map((item, idx) => {
-                            const dateObj = new Date(item.date);
-                            const dayOfWeek = !isNaN(dateObj.getTime()) ? daysOfWeek[(dateObj.getDay() + 1) % 7] : '';
-                            
-                            return (
-                                <View key={idx} style={styles.dayContainer}>
-                                    <Text style={{color: c.text, fontSize: 18, lineHeight: 26}}>
-                                        {item.shortDate}{'\n'}{dayOfWeek}
-                                    </Text>
-                                    
-                                    <View style={styles.cells}>
-                                        <View style={styles.cell}>
-                                            <Text style={{color: c.text, fontSize: 18, fontWeight: 'bold'}}>AM:</Text>
-                                            <Pressable onLongPress={() => handleLongPress(item.AMshift[0], 1, idx, 'AM', new Date(item.date))}>
-                                                <Text style={{color: c.text, fontSize: 18, fontWeight: 'bold', backgroundColor: c.card2, borderRadius: 4}}>
-                                                    {" "}{item.AMshift[0] !== -1 && selectedSchedule.employees[item.AMshift[0]] ? selectedSchedule.employees[item.AMshift[0]].name : 'No one'}{" "}
-                                                </Text>
-                                            </Pressable>
+                    {/* Visual columns (same style as mainpage) */}
+                    {(() => {
+                        const col1Units = selectedSchematic.column1.blocks.reduce((s, b) => s + b.size, 0);
+                        const col2Units = selectedSchematic.column2.blocks.reduce((s, b) => s + b.size, 0);
+                        const MAX_UNITS = Math.max(col1Units, col2Units);
+                        return (
+                            <View style={styles.tableContainer}>
+                                <View style={styles.column}>
+                                    {selectedSchematic.column1.blocks.map((b, i) => (
+                                        <View key={`sv-c1-${i}`} style={[styles.blockItem, { flexGrow: b.size, flexBasis: 0 }]}>
+                                            <Text style={styles.blockItemText}>{b.size}P - {b.wattage}A</Text>
                                         </View>
-                                        
-                                        <View style={styles.separator} />
-                                        
-                                        <View style={styles.cell}>
-                                            <Text style={{color: c.text, fontSize: 18, fontWeight: 'bold'}}>PM:</Text>
-                                            <Pressable onLongPress={() => handleLongPress(item.PMshift[0], 1, idx, 'PM', new Date(item.date))}>
-                                                <Text style={{color: c.text, fontSize: 18, fontWeight: 'bold', backgroundColor: c.card3, borderRadius: 4}}>
-                                                    {" "}{item.PMshift[0] !== -1 && selectedSchedule.employees[item.PMshift[0]] ? selectedSchedule.employees[item.PMshift[0]].name : 'No one'}{" "}
-                                                </Text>
-                                            </Pressable>
-                                        </View>
-                                        
-                                    </View>
+                                    ))}
+                                    {MAX_UNITS > col1Units && (
+                                        <View style={{ flexGrow: MAX_UNITS - col1Units, flexBasis: 0 }} />
+                                    )}
                                 </View>
-                            );
-                        })}
-                    </View>
-
-                    {/* week 2 */}
-                    <View style={styles.weekContainer}>
-                        {selectedSchedule.week2.map((item, idx) => {
-                            const dateObj = new Date(item.date);
-                            const dayOfWeek = !isNaN(dateObj.getTime()) ? daysOfWeek[dateObj.getDay()] : '';
-                            
-                            return (
-                                <View key={idx} style={styles.dayContainer}>
-                                    <Text style={{color: c.text, fontSize: 18, lineHeight: 26}}>
-                                        {item.shortDate}{'\n'}{dayOfWeek}
-                                    </Text>
-                                    
-                                    <View style={styles.cells}>
-                                        <View style={styles.cell}>
-                                            <Text style={{color: c.text, fontSize: 18, fontWeight: 'bold'}}>AM:</Text>
-                                            <Pressable onLongPress={() => handleLongPress(item.AMshift[0], 2, idx, 'AM', new Date(item.date))}>
-                                                <Text style={{color: c.text, fontSize: 18, fontWeight: 'bold', backgroundColor: c.card2, borderRadius: 4}}>
-                                                    {" "}{item.AMshift[0] !== -1 && selectedSchedule.employees[item.AMshift[0]] ? selectedSchedule.employees[item.AMshift[0]].name : 'No one'}{" "}
-                                                </Text>
-                                            </Pressable>
+                                <View style={styles.column}>
+                                    {selectedSchematic.column2.blocks.map((b, i) => (
+                                        <View key={`sv-c2-${i}`} style={[styles.blockItem, { flexGrow: b.size, flexBasis: 0 }]}>
+                                            <Text style={styles.blockItemText}>{b.size}P - {b.wattage}A</Text>
                                         </View>
-                                        <View style={styles.separator} />
-                                        <View style={styles.cell}>
-                                            <Text style={{color: c.text, fontSize: 18, fontWeight: 'bold'}}>PM:</Text>
-                                            <Pressable onLongPress={() => handleLongPress(item.PMshift[0], 2, idx, 'PM', new Date(item.date))}>
-                                                <Text style={{color: c.text, fontSize: 18, fontWeight: 'bold', backgroundColor: c.card3, borderRadius: 4}}>
-                                                    {" "}{item.PMshift[0] !== -1 && selectedSchedule.employees[item.PMshift[0]] ? selectedSchedule.employees[item.PMshift[0]].name : 'No one'}{" "}
-                                                </Text>
-                                            </Pressable>
-                                        </View>
-                                    </View>
-                                </View>
-                            );
-                        })}
-                    </View>
-
-                    {/* Swap Modal */}
-                    {modalVisible && selectedShiftInfo && (
-                        <Modal
-                            visible={modalVisible}
-                            transparent
-                            animationType="fade"
-                            onRequestClose={() => setModalVisible(false)}
-                        >
-                            <View style={{
-                                flex: 1,
-                                backgroundColor: 'rgba(0,0,0,0.5)',
-                                justifyContent: 'center',
-                                alignItems: 'center'
-                            }}>
-                                <View style={{
-                                    backgroundColor: c.card,
-                                    padding: 18,
-                                    borderRadius: 12,
-                                    alignItems: 'center'
-                                }}>
-                                    <Text style={{color: c.text, fontSize: 20, marginBottom: 16, fontWeight: 'bold'}}>Shift Options</Text>
-                                    <Text style={{color: c.text, fontSize: 18, marginBottom: 8, lineHeight: 24}}>
-                                        {selectedShiftInfo.employeeIdx !== -1
-                                            ? `Employee: ${selectedSchedule.employees[selectedShiftInfo.employeeIdx].name}\n`
-                                            : 'No employee assigned to this shift.\n'}
-                                        {selectedShiftInfo.week === 1
-                                            ? `Date: ${selectedSchedule.week1[selectedShiftInfo.dayIdx].shortDate}\n`
-                                            : `Date: ${selectedSchedule.week2[selectedShiftInfo.dayIdx].shortDate}\n`}
-                                        {`${selectedShiftInfo.shiftType} shift `}
-                                    </Text>
-                                    <Picker
-                                        selectedValue={selectedEmployeeIdx}
-                                        style={{ height: 50, width: 200, color: c.text, backgroundColor: c.card2 }}
-                                        onValueChange={(itemValue, itemIndex) => setSelectedEmployeeIdx(itemValue)}
-                                    >
-                                        {selectedSchedule.employees.map(emp => (
-                                            <Picker.Item key={emp.id} label={emp.name} value={emp.id} />
-                                        ))}
-                                    </Picker>
-                                    <Pressable
-                                        onPress={() => {
-                                            if (selectedEmployeeIdx !== null) {
-                                                // Swap logic: assign selectedEmployeeIdx to the shift
-                                                const updatedSchedules = [...schedules];
-                                                if (selectedIdx !== null) {
-                                                    if (selectedShiftInfo.week === 1) {
-                                                        const updatedWeek = [...selectedSchedule.week1];
-                                                        if (selectedShiftInfo.shiftType === 'AM') {
-                                                            updatedWeek[selectedShiftInfo.dayIdx].AMshift[0] = selectedEmployeeIdx;
-                                                        } else {
-                                                            updatedWeek[selectedShiftInfo.dayIdx].PMshift[0] = selectedEmployeeIdx;
-                                                        }
-                                                        updatedSchedules[selectedIdx].week1 = updatedWeek;
-                                                    } else {
-                                                        const updatedWeek = [...selectedSchedule.week2];
-                                                        if (selectedShiftInfo.shiftType === 'AM') {
-                                                            updatedWeek[selectedShiftInfo.dayIdx].AMshift[0] = selectedEmployeeIdx;
-                                                        } else {
-                                                            updatedWeek[selectedShiftInfo.dayIdx].PMshift[0] = selectedEmployeeIdx;
-                                                        }
-                                                        updatedSchedules[selectedIdx].week2 = updatedWeek;
-                                                    }
-                                                    setSchedules(updatedSchedules);
-                                                    AsyncStorage.setItem(SCHEDULES_KEY, JSON.stringify(updatedSchedules));
-                                                }
-                                            }
-                                            setModalVisible(false);
-                                        }}
-                                        style={{
-                                            backgroundColor: selectedEmployeeIdx !== null ? '#00f' : '#888',
-                                            borderRadius: 8,
-                                            padding: 8,
-                                            marginTop: 8,
-                                            opacity: selectedEmployeeIdx !== null ? 1 : 0.5
-                                        }}
-                                        disabled={selectedEmployeeIdx === null}
-                                    >
-                                        <Text style={{color: '#fff', fontSize: 18}}>Swap Employee</Text>
-                                    </Pressable>
-                                    <Pressable style={{borderColor: '#888', borderWidth: 1, borderRadius: 8, padding: 8, marginTop: 8}} onPress={() => setModalVisible(false)}>
-                                        <Text style={{color: c.text, fontSize: 18}}>Cancel</Text>
-                                    </Pressable>
+                                    ))}
+                                    {MAX_UNITS > col2Units && (
+                                        <View style={{ flexGrow: MAX_UNITS - col2Units, flexBasis: 0 }} />
+                                    )}
                                 </View>
                             </View>
-                        </Modal>
-                    )}
-
-                    {/* Delete confirmation modal */}
-                    <Modal
-                        visible={deleteModalVisible}
-                        transparent
-                        animationType="fade"
-                        onRequestClose={() => setDeleteModalVisible(false)}
-                    >
-                        <View style={{
-                            flex: 1,
-                            backgroundColor: 'rgba(0,0,0,0.5)',
-                            justifyContent: 'center',
-                            alignItems: 'center',
-                        }}>
-                            <View style={{
-                                backgroundColor: c.card,
-                                padding: 24,
-                                margin: 16,
-                                borderRadius: 12,
-                                alignItems: 'center'
-                            }}>
-                                <Text style={{ color: c.text, fontSize: 20, fontWeight: 'bold', marginBottom: 16 }}>
-                                    Delete this schedule?
-                                </Text>
-                                <Text style={{ color: c.text, fontSize: 16, marginBottom: 24 }}>
-                                    Are you sure you want to delete this saved schedule? This action cannot be undone.
-                                </Text>
-                                <View style={{ flexDirection: 'row', gap: 16 }}>
-                                    <Pressable
-                                        style={{
-                                            backgroundColor: '#c00',
-                                            borderRadius: 8,
-                                            padding: 12,
-                                            marginRight: 8,
-                                        }}
-                                        onPress={async () => {
-                                            if (scheduleToDeleteIdx !== null) {
-                                                const updatedSchedules = schedules.filter((_, i) => i !== scheduleToDeleteIdx);
-                                                setSchedules(updatedSchedules);
-                                                await AsyncStorage.setItem(SCHEDULES_KEY, JSON.stringify(updatedSchedules));
-                                                if (selectedIdx === scheduleToDeleteIdx) setSelectedIdx(null);
-                                                else if (selectedIdx && selectedIdx > scheduleToDeleteIdx) setSelectedIdx(selectedIdx - 1);
-                                            }
-                                            setDeleteModalVisible(false);
-                                            setScheduleToDeleteIdx(null);
-                                        }}
-                                    >
-                                        <Text style={{ color: '#fff', fontWeight: 'bold', fontSize: 16 }}>Delete</Text>
-                                    </Pressable>
-                                    <Pressable
-                                        style={{
-                                            backgroundColor: mode === 'dark' ? '#555' : '#ddd',
-                                            borderRadius: 8,
-                                            padding: 12,
-                                        }}
-                                        onPress={() => {
-                                            setDeleteModalVisible(false);
-                                            setScheduleToDeleteIdx(null);
-                                        }}
-                                    >
-                                        <Text style={{ color: c.text, fontWeight: 'bold', fontSize: 16 }}>Cancel</Text>
-                                    </Pressable>
-                                </View>
-                            </View>
-                        </View>
-                    </Modal> 
-
-                    <View style={[styles.optionsContainer, {width: '100%', marginTop: 8, borderRadius: 0}]}>
-                        <Text style={{ color: c.text, fontSize: 18, textAlign: 'center', paddingVertical: 4 }}>
-                            Hold on an employee name to swap
-                        </Text>
-                    </View>
-                </View>
-               
-            ) : (
-                <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', width: '90%' }}>
-                    <Text style={styles.title}>Select a schedule to view</Text>
+                        );
+                    })()}
                 </View>
             )}
-            
         </ScrollView>
     );
 };
 
-// Replace the static styles with themed styles (like mainpage)
+// Themed styles aligned with mainpage
 const themedStyles = (mode: 'light' | 'dark') => {
     const c = colorsFor(mode);
     return StyleSheet.create({
@@ -425,7 +156,7 @@ const themedStyles = (mode: 'light' | 'dark') => {
             gap: 8,
             minHeight: '100%',
         },
-        optionsContainer:{
+        optionsContainer: {
             display: 'flex',
             flexDirection: 'column',
             justifyContent: 'center',
@@ -436,49 +167,11 @@ const themedStyles = (mode: 'light' | 'dark') => {
             width: '90%',
             gap: 8,
         },
-        scheduleContainer: {
-            display: 'flex',
-            flexDirection: 'row',
-            flexWrap: 'wrap',
-            justifyContent: 'space-between',
-            width: '90%',
-        },
-        weekContainer: {
-            display: 'flex',
-            flexDirection: 'column',
-            width: '49%',
-            gap: 8,
-        },
-        dayContainer: {
-            display: 'flex',
-            flexDirection: 'row',
-            justifyContent: 'space-between',
-            width: '100%',
-            padding: 4,
-            backgroundColor: c.card,
-            alignContent: 'stretch',
-        },
-        cells: {
-            display: 'flex',
-            width: '75%',
-            paddingLeft: 8,
-            flexDirection: 'column',
-            alignSelf: 'stretch',
-        },
-        cell: {
-            display: 'flex',
-            flexDirection: 'row',
-            justifyContent: 'space-between',
-        },
         title: {
             fontSize: 28,
             fontWeight: 'bold',
             marginTop: 8,
             color: c.text,
-        },
-        link: {
-            color: '#007AFF',
-            fontSize: 18,
         },
         button: {
             backgroundColor: '#008AFF',
@@ -494,14 +187,41 @@ const themedStyles = (mode: 'light' | 'dark') => {
             fontWeight: 'bold',
             padding: 8,
         },
-        separator: {
-            height: 1,
-            backgroundColor: mode === 'dark' ? '#666' : '#ddd',
-            marginVertical: 1,
+        tableContainer: {
+            flexDirection: 'row',
+            justifyContent: 'space-around',
+            alignItems: 'center',
+            width: '100%',
+            backgroundColor: c.card,
+            minHeight: 100,
+            marginBottom: 0,
+            paddingVertical: 10,
+            borderRadius: 8,
         },
-        selectedSchedule: {
-            backgroundColor: '#0055ff',
-            borderWidth: 2,
+        column: {
+            width: '40%',
+            height: 400,
+            backgroundColor: c.card2,
+            padding: 6,
+            gap: 0,
+            borderRadius: 8,
+            overflow: 'hidden',
+        },
+        blockItem: {
+            backgroundColor: c.card,
+            borderWidth: 1,
+            borderColor: mode === 'dark' ? '#444' : '#ddd',
+            paddingVertical: 0,
+            paddingHorizontal: 8,
+            justifyContent: 'center',
+            alignItems: 'center',
+            minHeight: 0,
+        },
+        blockItemText: {
+            color: mode === 'dark' ? '#fff' : '#000',
+            fontWeight: '600',
+            paddingVertical: 4,
+            fontSize: 16,
         },
     });
 };
