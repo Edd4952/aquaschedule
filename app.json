@@ -1,11 +1,11 @@
 {
   "expo": {
-    "name": "aquaschedule",
+    "name": "CCounter",
     "slug": "aquaschedule",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
-    "scheme": "aquaschedule",
+    "scheme": "CCounter",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "ios": {
@@ -17,7 +17,7 @@
         "backgroundColor": "#ffffff"
       },
       "edgeToEdgeEnabled": true,
-      "package": "com.edd4952.aquaschedule"
+      "package": "com.edd4952.CCounter"
     },
     "web": {
       "bundler": "metro",
@@ -44,6 +44,7 @@
       "eas": {
         "projectId": "816e6307-71e8-4292-a88b-fb287ef48a12"
       }
-    }
+    },
+    "owner": "edd4952"
   }
 }

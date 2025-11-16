@@ -1,7 +1,7 @@
 import * as Clipboard from 'expo-clipboard';
 import { useLocalSearchParams } from 'expo-router';
 import React, { useEffect, useRef, useState } from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Pressable, StyleSheet, Text, View, ScrollView } from 'react-native';
 import { colorsFor, useThemeMode } from '../theme';
 
 const About = () => {
@@ -34,7 +34,7 @@ const About = () => {
     }, []);
 
     return (
-        <View style={styles.container}>
+        <ScrollView contentContainerStyle={styles.container}>
             <View style={styles.topic}>
                 <Text style={styles.title}>About Page</Text>
                 <Text style={styles.text2}>
@@ -66,7 +66,7 @@ const About = () => {
                     <Text style={{ color: '#fff', fontWeight: '600' }}>{toastMessage}</Text>
                 </View>
             )}
-        </View>
+        </ScrollView>
     );
 };
 

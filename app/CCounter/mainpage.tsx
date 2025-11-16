@@ -388,9 +388,11 @@ const mainpage: React.FC = () => {
                 ))}
             </View>
             <View style={{ flexDirection: 'row', width: '90%', justifyContent: 'space-between' }}>
+                
                 <Pressable style={[styles.button, { flex: 1, marginHorizontal: 4 }]} onPress={sort}>
                     <Text style={styles.buttonText}>Schematate</Text>
                 </Pressable>
+                
                 <Pressable
                     style={[styles.button, { backgroundColor: '#cc3b3b', flex: 1, marginHorizontal: 4 }]}
                     onPress={async () => {
@@ -401,6 +403,7 @@ const mainpage: React.FC = () => {
                     }}>
                     <Text style={styles.buttonText}>Clear Saved</Text>
                 </Pressable>
+                
             </View>
             {/* Zoom controls */}
             <View style={{ flexDirection: 'row', width: '90%', alignItems: 'center', marginBottom: 6 }}>
