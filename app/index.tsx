@@ -8,7 +8,7 @@ const HomePage = () => {
 
   return (
     <View style={[styles.container, { backgroundColor: c.bg }]}>
-      <Text style={[styles.text, { color: c.text, fontWeight: 'bold', fontSize: 32 }]}>CCounter</Text>
+      <Text style={[styles.text, { color: c.text, fontWeight: 'bold', fontSize: 42 }]}>CCounter</Text>
       
       <View style={styles.actions}>
         <Link style={[styles.button]} href={{ pathname: "/CCounter/mainpage", params: { id: "1" } }}>
