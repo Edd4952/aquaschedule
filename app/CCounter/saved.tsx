@@ -1,9 +1,9 @@
+import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useFocusEffect } from '@react-navigation/native';
 import React from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { colorsFor, useThemeMode } from '../theme';
-import { Ionicons } from '@expo/vector-icons';
 
 type Schematic = {
     id: number;
@@ -111,30 +111,44 @@ const SavedPage = () => {
                     {(() => {
                         const col1Units = selectedSchematic.column1.blocks.reduce((s, b) => s + b.size, 0);
                         const col2Units = selectedSchematic.column2.blocks.reduce((s, b) => s + b.size, 0);
+                        const col1Amp = selectedSchematic.column1.blocks.reduce((s, b) => s + (b?.wattage ?? 0), 0);
+                        const col2Amp = selectedSchematic.column2.blocks.reduce((s, b) => s + (b?.wattage ?? 0), 0);
                         const MAX_UNITS = Math.max(col1Units, col2Units);
                         return (
-                            <View style={styles.tableContainer}>
-                                <View style={styles.column}>
-                                    {selectedSchematic.column1.blocks.map((b, i) => (
-                                        <View key={`sv-c1-${i}`} style={[styles.blockItem, { flexGrow: b.size, flexBasis: 0 }]}>
-                                            <Text style={styles.blockItemText}>{b.size}P - {b.wattage}A</Text>
-                                        </View>
-                                    ))}
-                                    {MAX_UNITS > col1Units && (
-                                        <View style={{ flexGrow: MAX_UNITS - col1Units, flexBasis: 0 }} />
-                                    )}
+                            <>
+                                <View style={styles.tableContainer}>
+                                    <View style={styles.column}>
+                                        {selectedSchematic.column1.blocks.map((b, i) => (
+                                            <View key={`sv-c1-${i}`} style={[styles.blockItem, { flexGrow: b.size, flexBasis: 0 }]}>
+                                                <Text style={styles.blockItemText}>{b.size}P - {b.wattage}A</Text>
+                                            </View>
+                                        ))}
+                                        {MAX_UNITS > col1Units && (
+                                            <View style={{ flexGrow: MAX_UNITS - col1Units, flexBasis: 0 }} />
+                                        )}
+                                    </View>
+                                    <View style={styles.column}>
+                                        {selectedSchematic.column2.blocks.map((b, i) => (
+                                            <View key={`sv-c2-${i}`} style={[styles.blockItem, { flexGrow: b.size, flexBasis: 0 }]}>
+                                                <Text style={styles.blockItemText}>{b.size}P - {b.wattage}A</Text>
+                                            </View>
+                                        ))}
+                                        {MAX_UNITS > col2Units && (
+                                            <View style={{ flexGrow: MAX_UNITS - col2Units, flexBasis: 0 }} />
+                                        )}
+                                    </View>
                                 </View>
-                                <View style={styles.column}>
-                                    {selectedSchematic.column2.blocks.map((b, i) => (
-                                        <View key={`sv-c2-${i}`} style={[styles.blockItem, { flexGrow: b.size, flexBasis: 0 }]}>
-                                            <Text style={styles.blockItemText}>{b.size}P - {b.wattage}A</Text>
-                                        </View>
-                                    ))}
-                                    {MAX_UNITS > col2Units && (
-                                        <View style={{ flexGrow: MAX_UNITS - col2Units, flexBasis: 0 }} />
-                                    )}
+                                <View style={{ flexDirection: 'row', justifyContent: 'space-around', width: '90%' }}>
+                                    <View>
+                                        <Text style={{ color: mode === 'dark' ? '#fff' : '#000', fontWeight: '700' }}>Column 1</Text>
+                                        <Text style={{ color: mode === 'dark' ? '#fff' : '#000' }}>{col1Amp}A</Text>
+                                    </View>
+                                    <View>
+                                        <Text style={{ color: mode === 'dark' ? '#fff' : '#000', fontWeight: '700' }}>Column 2</Text>
+                                        <Text style={{ color: mode === 'dark' ? '#fff' : '#000' }}>{col2Amp}A</Text>
+                                    </View>
                                 </View>
-                            </View>
+                            </>
                         );
                     })()}
                 </View>

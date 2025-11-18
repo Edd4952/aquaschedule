@@ -171,53 +171,90 @@ const mainpage: React.FC = () => {
         const blocks = allBlocksSorted;
         const totalHeight = blocks.reduce((s, b) => s + b.size, 0);
         const cap1 = Math.ceil(totalHeight / 2);
-        const cap2 = totalHeight - cap1; // floor
+        const cap2 = totalHeight - cap1;
         const col1: block[] = [];
         const col2: block[] = [];
         let h1 = 0, h2 = 0;
-        let turn: 1 | 2 = 1;
-        let filling: 1 | 2 | null = null; // once set, stop alternating
+        let amp1 = 0, amp2 = 0;
+
+        const place = (target: 1 | 2, blk: block) => {
+            if (target === 1) {
+                col1.push(blk);
+                h1 += blk.size;
+                amp1 += blk.wattage;
+            } else {
+                col2.push(blk);
+                h2 += blk.size;
+                amp2 += blk.wattage;
+            }
+        };
 
         for (const blk of blocks) {
-            if (filling === 1) {
-                if (h1 + blk.size <= cap1) { col1.push(blk); h1 += blk.size; continue; }
-                if (h2 + blk.size <= cap2) { col2.push(blk); h2 += blk.size; continue; }
-                // fallback: place where more room remains (may overflow if unavoidable)
-                ((cap1 - h1) >= (cap2 - h2) ? col1 : col2).push(blk);
-                (cap1 - h1) >= (cap2 - h2) ? (h1 += blk.size) : (h2 += blk.size);
+            const can1 = h1 + blk.size <= cap1;
+            const can2 = h2 + blk.size <= cap2;
+            const diff = amp1 - amp2;
+            const diffIfCol1 = Math.abs((amp1 + blk.wattage) - amp2);
+            const diffIfCol2 = Math.abs(amp1 - (amp2 + blk.wattage));
+            // if col1amp>col2amp, there is space in col2 and adding blk to col2 evens amps more
+            if (diff > 0 && can2 && (!can1 || diffIfCol2 < diffIfCol1)) {
+                place(2, blk);
                 continue;
             }
-            if (filling === 2) {
-                if (h2 + blk.size <= cap2) { col2.push(blk); h2 += blk.size; continue; }
-                if (h1 + blk.size <= cap1) { col1.push(blk); h1 += blk.size; continue; }
-                ((cap2 - h2) >= (cap1 - h1) ? col2 : col1).push(blk);
-                (cap2 - h2) >= (cap1 - h1) ? (h2 += blk.size) : (h1 += blk.size);
+            // if col2amp>col1amp, there is space in col1 and adding blk to col1 evens amps more
+            if (diff < 0 && can1 && (!can2 || diffIfCol1 < diffIfCol2)) {
+                place(1, blk);
                 continue;
             }
-
-            if (turn === 1) {
-                if (h1 + blk.size <= cap1) {
-                    col1.push(blk); h1 += blk.size; turn = 2;
-                    if (h1 === cap1) filling = 2;
+            //if both are open
+            if (can1 && can2) {
+                //if they are even before the placement
+                if (diffIfCol1 === diffIfCol2) {
+                    
+                    const remain1 = cap1 - (h1 + blk.size);
+                    const remain2 = cap2 - (h2 + blk.size);
+                    place(remain1 >= remain2 ? 1 : 2, blk);
                 } else {
-                    filling = 2; // can't fit on left, start filling right
-                    if (h2 + blk.size <= cap2) { col2.push(blk); h2 += blk.size; }
-                    else { col1.push(blk); h1 += blk.size; }
+                    place(diffIfCol1 <= diffIfCol2 ? 1 : 2, blk);
                 }
+            } else if (can1 || can2) {
+                place(can1 ? 1 : 2, blk);
             } else {
-                if (h2 + blk.size <= cap2) {
-                    col2.push(blk); h2 += blk.size; turn = 1;
-                    if (h2 === cap2) filling = 1;
-                } else {
-                    filling = 1; // can't fit on right, start filling left
-                    if (h1 + blk.size <= cap1) { col1.push(blk); h1 += blk.size; }
-                    else { col2.push(blk); h2 += blk.size; }
-                }
+                place(diffIfCol1 <= diffIfCol2 ? 1 : 2, blk);
             }
         }
 
         setColumn1({ blocks: col1 });
         setColumn2({ blocks: col2 });
+
+        const optimizeColumns = () => {
+            let improved = true;
+            while (improved) {
+                improved = false;
+                const baseDiff = Math.abs(
+                    col1.reduce((s, b) => s + b.wattage, 0) -
+                    col2.reduce((s, b) => s + b.wattage, 0)
+                );
+                for (let i = col1.length - 1; i >= 0; i--) {
+                    for (let j = col2.length - 1; j >= 0; j--) {
+                        const a = col1[i], b = col2[j];
+                        if (a.size !== b.size) continue;
+                        const diffAfterSwap = Math.abs(
+                            (col1.reduce((s, blk, idx) => s + (idx === i ? b.wattage : blk.wattage), 0)) -
+                            (col2.reduce((s, blk, idx) => s + (idx === j ? a.wattage : blk.wattage), 0))
+                        );
+                        if (diffAfterSwap < baseDiff) {
+                            col1[i] = b;
+                            col2[j] = a;
+                            improved = true;
+                        }
+                    }
+                }
+            }
+            setColumn1({ blocks: [...col1] });
+            setColumn2({ blocks: [...col2] });
+        };
+
+        optimizeColumns();
     };
 
     // NEW: visualization metrics for fixed-height columns with proportional blocks
@@ -460,8 +497,24 @@ const mainpage: React.FC = () => {
                         <View style={{ flexGrow: MAX_UNITS - col2Units, flexBasis: 0 }} />
                     )}
                 </View>
+                
             </View>
-            
+            {/* Total amps per column */}
+            <View style={{ flexDirection: 'row', justifyContent: 'space-around', width: '90%' }}>
+                <View style={{ }}>
+                    <Text style={{ color: mode === 'dark' ? '#fff' : '#000', fontWeight: '700' }}>Column 1</Text>
+                    <Text style={{ color: mode === 'dark' ? '#fff' : '#000' }}>
+                        {column1.blocks.reduce((sum, block) => sum + (block?.wattage ?? 0), 0)}A
+                    </Text>
+                </View>
+                <View style={{ }}>
+                    <Text style={{ color: mode === 'dark' ? '#fff' : '#000', fontWeight: '700' }}>Column 2</Text>
+                    <Text style={{ color: mode === 'dark' ? '#fff' : '#000' }}>
+                        {column2.blocks.reduce((sum, block) => sum + (block?.wattage ?? 0), 0)}A
+                    </Text>
+                </View>
+            </View>
+            {/* save button */}
             <Pressable
                 style={[styles.button, { backgroundColor: '#27a745', flex: 1, marginHorizontal: 4, marginBottom: 8 }]}
                 onPress={saveSchematic}
@@ -540,6 +593,17 @@ const themedStyles = (mode: 'light' | 'dark') => {
         fontWeight: 'bold',
         color: c.text,
     },
+    // wattInput: {
+    //     width: 40,
+    //     paddingVertical: 6,
+    //     color: mode === 'dark' ? '#fff' : '#000', 
+    //     backgroundColor: c.card2,
+    // },
+    // title: {
+    //     fontSize: 28,
+    //     fontWeight: 'bold',
+    //     color: c.text,
+    // },
     link: {
         color: '#007AFF',
         fontSize: 18,
